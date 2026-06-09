@@ -1,0 +1,22 @@
+{
+  "name": "lek-backend",
+  "version": "0.1.0",
+  "description": "Lëk backend API — user registration, alerts, and admin endpoints.",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.11.5",
+    "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^5.1.1",
+    "africastalking": "^0.7.0"
+  },
+  "devDependencies": {},
+  "license": "MIT"
+}
