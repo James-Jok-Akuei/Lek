@@ -1,7 +1,13 @@
+# --- API runtime ---
 fastapi
 uvicorn[standard]
 pydantic
+
+# --- ML / data stack (training + inference) ---
 scikit-learn
+statsmodels
+xgboost
+tensorflow
 pandas
 numpy
 joblib

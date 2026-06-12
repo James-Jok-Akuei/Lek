@@ -42,3 +42,7 @@ ENV/
 *.swp
 *.swo
 *~
+.DS_Store
+
+# ---- Large data (exceeds GitHub's 100 MB file limit; download separately) ----
+training/data/raw/ucdp_ged.csv

@@ -1,0 +1,13 @@
+﻿month,is_lean_season,season
+1,0,dry
+2,0,dry
+3,0,dry
+4,0,rainy
+5,1,rainy
+6,1,rainy
+7,1,rainy
+8,0,rainy
+9,0,rainy
+10,0,harvest
+11,0,harvest
+12,0,dry

@@ -1,0 +1,94 @@
+{
+  "version_name": "v1_arima_20260612",
+  "trained_at": "2026-06-12T12:04:06",
+  "rmse": 1.196516,
+  "mape": 2.389444,
+  "r2_score": 0.880478,
+  "feature_names": [
+    "c_food_price_index",
+    "inflation_food_price_index",
+    "c_beans",
+    "c_cassava",
+    "c_groundnuts",
+    "c_livestockgoat_male",
+    "c_livestocksheep_male",
+    "c_maize",
+    "c_maize_meal",
+    "c_millet",
+    "c_oil",
+    "c_salt",
+    "c_sesame",
+    "c_sorghum",
+    "c_sugar",
+    "c_wheat_flour",
+    "exchange_rate",
+    "oil_production",
+    "national_cpi",
+    "pipeline_flowing",
+    "is_lean_season",
+    "season_ord",
+    "fpi_lag1",
+    "fpi_lag3",
+    "fpi_lag6",
+    "fpi_lag12",
+    "fpi_roll3",
+    "fpi_roll6",
+    "fx_lag1",
+    "fx_lag3",
+    "oil_lag1",
+    "conflict_events_ssd_lag1",
+    "conflict_deaths_ssd_lag1",
+    "conflict_events_sdn_lag1",
+    "conflict_deaths_sdn_lag1",
+    "m_1",
+    "m_2",
+    "m_3",
+    "m_4",
+    "m_5",
+    "m_6",
+    "m_7",
+    "m_8",
+    "m_9",
+    "m_10",
+    "m_11",
+    "m_12"
+  ],
+  "target_name": "y_next_month",
+  "training_data_range": {
+    "start_date": "2008-01-01",
+    "end_date": "2024-12-01"
+  },
+  "all_model_results": {
+    "LinearRegression": {
+      "RMSE": 10.042078,
+      "MAE": 9.014755,
+      "MAPE": 21.369691,
+      "R2": -7.418942
+    },
+    "ARIMA": {
+      "RMSE": 1.196516,
+      "MAE": 1.000298,
+      "MAPE": 2.389444,
+      "R2": 0.880478
+    },
+    "RandomForest": {
+      "RMSE": 14.291921,
+      "MAE": 13.722386,
+      "MAPE": 32.388338,
+      "R2": -16.052637
+    },
+    "XGBoost": {
+      "RMSE": 33.498842,
+      "MAE": 33.319578,
+      "MAPE": 79.943711,
+      "R2": -92.684967
+    },
+    "LSTM": {
+      "RMSE": 40.140629,
+      "MAE": 40.005439,
+      "MAPE": 96.164354,
+      "R2": -133.517467
+    }
+  },
+  "data_caveat": "conflict (UCDP) and national CPI end 2024; oil ends Jan 2026 \u2014 these features are forward/zero-filled across the 2025-2026 test window."
+}
