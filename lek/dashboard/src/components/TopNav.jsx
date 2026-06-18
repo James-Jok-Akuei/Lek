@@ -1,6 +1,7 @@
-import { NavLink } from 'react-router-dom'
-import { LayoutGrid, TrendingUp, Users, Bell } from 'lucide-react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { LayoutGrid, TrendingUp, Users, Bell, LogOut } from 'lucide-react'
 import Logo from './Logo'
+import { logout } from '../api'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutGrid, end: true },
@@ -35,6 +36,11 @@ function NavItem({ item }) {
 }
 
 export default function TopNav() {
+  const navigate = useNavigate()
+  function handleLogout() {
+    logout()
+    navigate('/login', { replace: true })
+  }
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-surface">
       <div className="mx-auto flex h-18 w-full max-w-7xl items-center px-6 lg:px-8">
@@ -52,6 +58,13 @@ export default function TopNav() {
               A
             </span>
             <span className="hidden text-sm font-medium text-ink sm:inline">Welcome, Admin</span>
+            <button
+              onClick={handleLogout}
+              title="Sign out"
+              className="ml-1 grid h-8 w-8 place-items-center rounded-full text-muted transition hover:bg-canvas hover:text-ink"
+            >
+              <LogOut size={16} strokeWidth={1.8} />
+            </button>
           </div>
         </div>
       </div>

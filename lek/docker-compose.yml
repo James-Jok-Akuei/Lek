@@ -1,0 +1,53 @@
+# Lëk full stack — one command: `docker compose up --build`
+# Brings up Postgres (schema + counties seeded), the ML service, the backend
+# (which seeds the admin user + subscribers + thresholds on start), and the
+# dashboard. Then open http://localhost:8080 and sign in with admin / admin123.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: lek
+      POSTGRES_USER: lek
+      POSTGRES_PASSWORD: lek
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lek -d lek"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  ml-service:
+    build: ./ml-service
+    ports:
+      - "8000:8000"
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://lek:lek@db:5432/lek
+      ML_SERVICE_URL: http://ml-service:8000
+      JWT_SECRET: change-me-in-production
+      NODE_ENV: production
+      PORT: "3000"
+    command: sh -c "node scripts/seed.js && node src/server.js"
+    depends_on:
+      db:
+        condition: service_healthy
+      ml-service:
+        condition: service_started
+    ports:
+      - "3000:3000"
+
+  dashboard:
+    build:
+      context: ./dashboard
+      args:
+        VITE_API_URL: http://localhost:3000/api
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"

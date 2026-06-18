@@ -1,7 +1,14 @@
+import { useState } from 'react'
+import { RefreshCw } from 'lucide-react'
 import { StatusBadge } from '../components/Badge'
-import { alerts } from '../mockData'
+import { useAsync, getAlerts, runAlerts } from '../api'
 
 export default function Alerts() {
+  const [tick, setTick] = useState(0)
+  const [running, setRunning] = useState(false)
+  const { data, loading, error } = useAsync(getAlerts, [tick])
+  const alerts = data || []
+
   const counts = alerts.reduce((acc, a) => {
     acc[a.status] = (acc[a.status] ?? 0) + 1
     return acc
@@ -9,16 +16,40 @@ export default function Alerts() {
 
   const summary = [
     { label: 'Total sent', value: alerts.length, dot: 'bg-faint' },
-    { label: 'Delivered', value: counts.delivered ?? 0, dot: 'bg-good' },
+    { label: 'Sent', value: counts.sent ?? 0, dot: 'bg-good' },
     { label: 'Pending', value: counts.pending ?? 0, dot: 'bg-warn' },
     { label: 'Failed', value: counts.failed ?? 0, dot: 'bg-bad' },
   ]
 
+  // Trigger a fresh prediction + alert run on the backend, then reload the log.
+  async function handleRun() {
+    setRunning(true)
+    try {
+      await runAlerts()
+    } finally {
+      setRunning(false)
+      setTick((t) => t + 1)
+    }
+  }
+
+  if (loading) return <p className="py-20 text-center text-muted">Loading alerts…</p>
+  if (error) return <p className="py-20 text-center text-bad">Could not load alerts.</p>
+
   return (
     <div className="flex h-[calc(100vh-130px)] flex-col space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">Alerts</h1>
-        <p className="mt-1 text-sm text-muted">SMS price warnings dispatched to subscribers.</p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Alerts</h1>
+          <p className="mt-1 text-sm text-muted">SMS price warnings dispatched to subscribers.</p>
+        </div>
+        <button
+          onClick={handleRun}
+          disabled={running}
+          className="inline-flex items-center gap-2 self-start rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-forest-hover disabled:opacity-60 sm:self-auto"
+        >
+          <RefreshCw size={16} strokeWidth={2} className={running ? 'animate-spin' : ''} />
+          {running ? 'Running…' : 'Run alert check'}
+        </button>
       </header>
 
       <div className="flex flex-wrap gap-x-8 gap-y-3">
@@ -54,7 +85,9 @@ export default function Alerts() {
                   <td className="px-6 py-4">
                     <StatusBadge status={a.status} />
                   </td>
-                  <td className="tnum px-6 py-4 text-ink-soft whitespace-nowrap">{a.sentAt}</td>
+                  <td className="tnum px-6 py-4 text-ink-soft whitespace-nowrap">
+                    {new Date(a.sentAt).toLocaleString()}
+                  </td>
                 </tr>
               ))}
             </tbody>

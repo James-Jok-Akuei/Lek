@@ -1,18 +1,22 @@
 import { useState } from 'react'
 import { ChevronsUpDown } from 'lucide-react'
 import { RiskBadge } from '../components/Badge'
-import { counties } from '../mockData'
+import { useAsync, getCounties } from '../api'
 
 const RISK_ORDER = { high: 3, medium: 2, low: 1 }
 
 export default function Predictions() {
   // Sort by risk level; toggle high→low / low→high.
   const [sortDesc, setSortDesc] = useState(true)
+  const { data: counties, loading, error } = useAsync(getCounties)
 
-  const rows = [...counties].sort((a, b) => {
+  const rows = [...(counties || [])].sort((a, b) => {
     const diff = RISK_ORDER[b.riskLevel] - RISK_ORDER[a.riskLevel]
     return sortDesc ? diff : -diff
   })
+
+  if (loading) return <p className="py-20 text-center text-muted">Loading predictions…</p>
+  if (error) return <p className="py-20 text-center text-bad">Could not load predictions.</p>
 
   return (
     <div className="flex h-[calc(100vh-130px)] flex-col space-y-6">

@@ -2,19 +2,12 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { StatusBadge } from '../components/Badge'
-import {
-  counties,
-  highRiskCounties,
-  summaryStats,
-  alerts,
-  modelInfo,
-  nationalForecast,
-} from '../mockData'
+import { useAsync, loadOverview } from '../api'
 
 // --- National forecast + real model status ---------------------------------
 // The model forecasts ONE national index a month ahead; this banner shows that
 // real output and the facts of the trained model behind it.
-function ForecastBanner() {
+function ForecastBanner({ modelInfo, nationalForecast }) {
   return (
     <div className="flex flex-col gap-6 rounded-3xl bg-cream px-8 py-7 lg:flex-row lg:items-center lg:justify-between">
       <div>
@@ -58,24 +51,24 @@ function StatTile({ tone, label, value, suffix }) {
   )
 }
 
-function StatTiles() {
+function StatTiles({ stats }) {
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
       <div className="rounded-3xl bg-forest px-7 py-6">
         <p className="text-sm font-medium text-white/70">Alerts Sent</p>
         <p className="mt-6 flex items-baseline gap-1.5">
           <span className="tnum text-4xl font-extrabold tracking-tight text-white">
-            {summaryStats.alertsSentThisMonth}
+            {stats.alertsSentThisMonth}
           </span>
           <span className="text-sm text-white/70">this month</span>
         </p>
       </div>
-      <StatTile tone="bg-mint" label="Registered Users" value={summaryStats.totalUsers} />
-      <StatTile tone="bg-lilac" label="Regions Tracked" value={summaryStats.regionsTracked} />
+      <StatTile tone="bg-mint" label="Registered Users" value={stats.totalUsers} />
+      <StatTile tone="bg-lilac" label="Regions Tracked" value={stats.regionsTracked} />
       <StatTile
         tone="bg-sand"
         label="Counties at High Risk"
-        value={summaryStats.countiesAtHighRisk}
+        value={stats.countiesAtHighRisk}
         suffix="of 10 regions"
       />
     </div>
@@ -100,7 +93,7 @@ const RISK_LABEL = { high: 'High risk', medium: 'Watch', low: 'Stable' }
 const RISK_DOT = { high: 'bg-bad', medium: 'bg-warn', low: 'bg-good' }
 const RISK_TEXT = { high: 'text-bad', medium: 'text-warn', low: 'text-good' }
 
-function ForecastsPanel() {
+function ForecastsPanel({ counties, highRiskCounties }) {
   const [tab, setTab] = useState('risk')
   const [page, setPage] = useState(0)
 
@@ -198,7 +191,7 @@ function ForecastsPanel() {
 // --- Risk by region (performance table) ------------------------------------
 const BAR_FILL = { high: 'bg-bad/35', medium: 'bg-warn/35', low: 'bg-good/35' }
 
-function PerformancePanel() {
+function PerformancePanel({ counties }) {
   const ranked = [...counties]
     .sort((a, b) => b.predictedChange - a.predictedChange)
     .slice(0, 5)
@@ -245,7 +238,7 @@ function PerformancePanel() {
 }
 
 // --- Recent alerts (orders-style table) ------------------------------------
-function RecentAlerts() {
+function RecentAlerts({ alerts }) {
   const rows = alerts
 
   return (
@@ -272,7 +265,9 @@ function RecentAlerts() {
               <tr key={a.id} className="border-b border-line last:border-0">
                 <td className="tnum px-5 py-4 font-medium text-ink">{a.phone}</td>
                 <td className="px-5 py-4 text-ink-soft">{a.county}</td>
-                <td className="tnum px-5 py-4 text-ink-soft">{a.sentAt.split(' ')[0]}</td>
+                <td className="tnum px-5 py-4 text-ink-soft">
+                  {new Date(a.sentAt).toLocaleDateString()}
+                </td>
                 <td className="px-5 py-4">
                   <StatusBadge status={a.status} />
                 </td>
@@ -286,15 +281,29 @@ function RecentAlerts() {
 }
 
 export default function Overview() {
+  const { data, loading, error } = useAsync(loadOverview)
+
+  if (loading) {
+    return <p className="py-20 text-center text-muted">Loading dashboard…</p>
+  }
+  if (error) {
+    return (
+      <p className="py-20 text-center text-bad">
+        Could not load data. Is the backend running on :3000 and the ml-service on :8000?
+      </p>
+    )
+  }
+
+  const { counties, highRiskCounties, stats, alerts, modelInfo, nationalForecast } = data
   return (
     <div className="space-y-6">
-      <ForecastBanner />
-      <StatTiles />
+      <ForecastBanner modelInfo={modelInfo} nationalForecast={nationalForecast} />
+      <StatTiles stats={stats} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <ForecastsPanel />
-        <PerformancePanel />
+        <ForecastsPanel counties={counties} highRiskCounties={highRiskCounties} />
+        <PerformancePanel counties={counties} />
       </div>
-      <RecentAlerts />
+      <RecentAlerts alerts={alerts} />
     </div>
   )
 }

@@ -1,0 +1,8 @@
+# Runtime-only deps for serving the selected ARIMA model (no TensorFlow/XGBoost).
+# Use requirements.txt for the full training + inference stack.
+fastapi
+uvicorn[standard]
+statsmodels
+scikit-learn
+pandas
+joblib

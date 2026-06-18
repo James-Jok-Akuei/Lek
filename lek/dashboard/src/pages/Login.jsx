@@ -1,15 +1,27 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { login } from '../api'
 
 export default function Login() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('admin@lek.ss')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('admin')
+  const [password, setPassword] = useState('admin123')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  // Mock auth: accept ANY input and go straight to the dashboard.
-  function handleSubmit(e) {
+  // Real auth: POST to the backend, store the JWT, then enter the dashboard.
+  async function handleSubmit(e) {
     e.preventDefault()
-    navigate('/dashboard')
+    setError('')
+    setBusy(true)
+    try {
+      await login(email.trim(), password)
+      navigate('/dashboard')
+    } catch {
+      setError('Invalid username or password.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -27,14 +39,14 @@ export default function Login() {
         </h1>
 
         <form onSubmit={handleSubmit} className="mt-7 space-y-4">
-          {/* Email — label sits inside the field */}
+          {/* Username — label sits inside the field */}
           <div className="rounded-lg border border-line-strong px-5 py-3 transition focus-within:border-forest/50 focus-within:ring-2 focus-within:ring-forest/10">
-            <label className="block text-xs font-medium text-faint">Email ID</label>
+            <label className="block text-xs font-medium text-faint">Username</label>
             <input
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="admin"
               className="mt-0.5 w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-faint"
             />
           </div>
@@ -51,6 +63,10 @@ export default function Login() {
             />
           </div>
 
+          {error && (
+            <p className="rounded-lg bg-bad/10 px-4 py-2.5 text-sm font-medium text-bad">{error}</p>
+          )}
+
           <p className="text-[13px] leading-relaxed text-muted">
             By signing in, you agree to Lëk&apos;s{' '}
             <span className="font-semibold text-terra">Terms of Use</span> &amp;{' '}
@@ -59,9 +75,10 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full rounded-full bg-forest py-4 text-base font-semibold text-white transition hover:bg-forest-hover"
+            disabled={busy}
+            className="w-full rounded-full bg-forest py-4 text-base font-semibold text-white transition hover:bg-forest-hover disabled:opacity-60"
           >
-            Sign in
+            {busy ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
 

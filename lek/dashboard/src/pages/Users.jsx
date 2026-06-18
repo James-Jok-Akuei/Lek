@@ -1,10 +1,33 @@
 import { useMemo, useState } from 'react'
 import { Search, Plus, X } from 'lucide-react'
 import { StatusBadge } from '../components/Badge'
-import { users, counties } from '../mockData'
+import { useAsync, getUsers, getCounties, registerUser } from '../api'
 
-function AddUserModal({ open, onClose }) {
+function AddUserModal({ open, onClose, counties, onSubmit }) {
+  const [phone, setPhone] = useState('+211 9')
+  const [countyId, setCountyId] = useState('')
+  const [lang, setLang] = useState('en')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
   if (!open) return null
+
+  async function submit(e) {
+    e.preventDefault()
+    setErr('')
+    setSaving(true)
+    try {
+      await onSubmit({
+        phone_number: phone.replace(/\s+/g, ''),
+        county_id: Number(countyId || counties[0]?.id),
+        language_preference: lang,
+      })
+      onClose()
+    } catch (e2) {
+      setErr(e2.message || 'Could not add user')
+    } finally {
+      setSaving(false)
+    }
+  }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-ink/20" onClick={onClose} />
@@ -22,37 +45,43 @@ function AddUserModal({ open, onClose }) {
           </button>
         </div>
 
-        {/* Form is illustrative only — it does not persist in this demo. */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            onClose()
-          }}
-          className="mt-6 space-y-4"
-        >
+        {/* Registers a real subscriber via POST /api/users/register. */}
+        <form onSubmit={submit} className="mt-6 space-y-4">
           <div>
             <label className="mb-2 block text-[13px] font-medium text-ink-soft">Phone number</label>
             <input
               type="text"
-              defaultValue="+211 9"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               className="w-full rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-sm outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/10"
               placeholder="+211 9XX XXX XXX"
             />
           </div>
           <div>
             <label className="mb-2 block text-[13px] font-medium text-ink-soft">County</label>
-            <select className="w-full rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-sm outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/10">
+            <select
+              value={countyId}
+              onChange={(e) => setCountyId(e.target.value)}
+              className="w-full rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-sm outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/10"
+            >
               {counties.map((c) => (
-                <option key={c.id}>{c.name}</option>
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>
           <div>
             <label className="mb-2 block text-[13px] font-medium text-ink-soft">Language</label>
-            <select className="w-full rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-sm outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/10">
-              <option>English</option>
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value)}
+              className="w-full rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-sm outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/10"
+            >
+              <option value="en">English</option>
+              <option value="ar">Arabic</option>
             </select>
           </div>
+
+          {err && <p className="text-sm font-medium text-bad">{err}</p>}
 
           <div className="flex justify-end gap-2 pt-2">
             <button
@@ -64,9 +93,10 @@ function AddUserModal({ open, onClose }) {
             </button>
             <button
               type="submit"
-              className="rounded-full bg-forest px-5 py-2 text-sm font-semibold text-white transition hover:bg-forest-hover"
+              disabled={saving}
+              className="rounded-full bg-forest px-5 py-2 text-sm font-semibold text-white transition hover:bg-forest-hover disabled:opacity-60"
             >
-              Add user
+              {saving ? 'Adding…' : 'Add user'}
             </button>
           </div>
         </form>
@@ -78,14 +108,28 @@ function AddUserModal({ open, onClose }) {
 export default function Users() {
   const [query, setQuery] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
+  const [tick, setTick] = useState(0)
+
+  const { data: usersData, loading, error } = useAsync(getUsers, [tick])
+  const { data: countiesData } = useAsync(getCounties)
+  const users = useMemo(() => usersData || [], [usersData])
+  const counties = countiesData || []
+
+  async function handleRegister(payload) {
+    await registerUser(payload)
+    setTick((t) => t + 1)
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return users
     return users.filter(
-      (u) => u.county.toLowerCase().includes(q) || u.phone.toLowerCase().includes(q),
+      (u) => (u.county || '').toLowerCase().includes(q) || (u.phone || '').toLowerCase().includes(q),
     )
-  }, [query])
+  }, [query, users])
+
+  if (loading) return <p className="py-20 text-center text-muted">Loading users…</p>
+  if (error) return <p className="py-20 text-center text-bad">Could not load users.</p>
 
   return (
     <div className="flex h-[calc(100vh-130px)] flex-col space-y-6">
@@ -139,7 +183,9 @@ export default function Users() {
                   <td className="h-14 px-6">
                     <StatusBadge status={u.status} />
                   </td>
-                  <td className="tnum h-14 px-6 text-ink-soft">{u.registeredDate}</td>
+                  <td className="tnum h-14 px-6 text-ink-soft">
+                    {u.registeredAt ? new Date(u.registeredAt).toLocaleDateString() : '—'}
+                  </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
@@ -158,7 +204,12 @@ export default function Users() {
         Showing {filtered.length} of {users.length} users.
       </p>
 
-      <AddUserModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <AddUserModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        counties={counties}
+        onSubmit={handleRegister}
+      />
     </div>
   )
 }

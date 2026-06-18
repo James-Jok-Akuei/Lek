@@ -8,21 +8,23 @@ responders advance warning ahead of the lean season.
 
 - **GitHub repo:** https://github.com/James-Jok-Akuei/Lek
 - **Video demo:** https://drive.google.com/file/d/12tOk4mmeJHFqzlhUjRvAtra47GnlTsFj/view?usp=sharing
-- **Status:** Initial product / MVP. The ML model and the admin dashboard are
-  built and runnable today; the live API and SMS dispatch are scaffolded and
-  scheduled for the final-product phase (see [Roadmap](#roadmap)).
+- **Status:** Working end-to-end MVP. The full stack runs locally — the ML model
+  is served by an API, the backend turns forecasts into per-county predictions and
+  SMS alerts, and the dashboard reads it all live. SMS runs in simulated mode until
+  Africa's Talking credentials are supplied (see [Roadmap](#roadmap)).
 
 ---
 
-## What works in this initial version
+## What works today
 
 | Component | Status | What you can demo |
 |---|---|---|
 | **ML training notebook** (`training/train_model.ipynb`) | ✅ Runs end-to-end | Data engineering of 7 sources, data visualizations, 5 trained models, comparison, model selection, saved `model.pkl` |
-| **Admin dashboard** (`dashboard/`) | ✅ Runs (React + Vite) | Login → Overview → Predictions / Users / Alerts, with the real trained-model metrics surfaced in the UI |
+| **ML API service** (`ml-service/`) | ✅ Live FastAPI | Serves the ARIMA model; `/forecast`, `/predict`, `/model`, interactive Swagger UI at `/docs` |
+| **Backend API** (`backend/`) | ✅ Live Express | JWT admin auth, per-county predictions, threshold checks, alert engine; `/api/*` |
+| **SMS dispatch** (Africa's Talking) | ✅ Simulated mode | Alert engine sends SMS (logged when no API key is set); plug in a key to go live |
+| **Admin dashboard** (`dashboard/`) | ✅ Live data | Login → Overview → Predictions / Users / Alerts, all reading the backend API; register subscribers, run an alert check |
 | **Database** (`database/`) | ✅ Schema + seed | 7-table PostgreSQL schema, 10 South Sudan states seeded |
-| **ML API service** (`ml-service/`) | 🚧 Scaffolded | FastAPI service to serve `model.pkl` (planned for final phase) |
-| **Backend + SMS** (`backend/`) | 🚧 Scaffolded | Express API + Africa's Talking SMS (planned for final phase) |
 
 ---
 
@@ -92,53 +94,64 @@ The trained model and its metadata are saved to:
 
 **Prerequisites:** PostgreSQL 14+, Node.js 18+, Python 3.12.
 
-### 1. Clone
+### Quickest path — Docker
+
 ```bash
 git clone https://github.com/James-Jok-Akuei/Lek.git
 cd Lek/lek
+docker compose up --build
 ```
+Then open **http://localhost:8080** and sign in with **admin / admin123**.
+(ML service Swagger: http://localhost:8000/docs.) Compose brings up Postgres
+(schema + counties), the ML service, the backend (which seeds the admin user,
+subscribers, and thresholds on start), and the dashboard.
 
-### 2. Database
+### Manual path
+
+**1. Clone & database**
 ```bash
+git clone https://github.com/James-Jok-Akuei/Lek.git && cd Lek/lek
 createdb lek
 psql -d lek -f database/schema.sql
 psql -d lek -f database/seed.sql
-psql -d lek -c "\dt"          # verify 7 tables
+cp .env.example .env          # adjust DATABASE_URL for your Postgres
 ```
 
-### 3. Environment variables
+**2. ML service** (port 8000)
 ```bash
-cp .env.example .env          # then fill in values
+cd ml-service
+python3.12 -m venv .venv && ./.venv/bin/pip install -r requirements-serve.txt
+./.venv/bin/uvicorn main:app --port 8000     # Swagger UI at /docs
 ```
 
-### 4. ML training notebook
+**3. Backend** (port 3000)
 ```bash
-cd training
-python3.12 -m venv .venv
-source .venv/bin/activate
-pip install -r ../ml-service/requirements.txt jupyter matplotlib seaborn
-jupyter notebook train_model.ipynb     # Run All to reproduce the model
+cd backend
+npm install
+node scripts/seed.js          # admin user (admin/admin123), subscribers, thresholds
+node src/server.js
 ```
-> Note: the raw datasets live in `training/data/raw/` (the UCDP file is large and
-> is excluded from git). The notebook regenerates `model.pkl` and the processed
-> master table when run.
 
-### 5. Admin dashboard (the main MVP to demo)
+**4. Dashboard** (port 5173)
 ```bash
 cd dashboard
 npm install
-npm run dev                    # opens http://localhost:5173
+npm run dev
 ```
-Open the URL, log in on the Login screen, and explore Overview → Predictions →
-Users → Alerts. (The dashboard currently renders representative data; wiring it to
-the live API is part of the final phase.)
+Open http://localhost:5173, sign in with **admin / admin123**, and explore
+Overview → Predictions → Users → Alerts. Use **Run alert check** on the Alerts
+page to generate fresh predictions and (simulated) SMS alerts.
 
-### 6. ML API service (scaffolded)
-```bash
-cd ml-service
-pip install -r requirements.txt
-uvicorn main:app --reload      # Swagger UI at http://localhost:8000/docs
-```
+> Shortcut: with the prerequisites done once, `./scripts/run-local.sh` starts all
+> three services together.
+
+**To reproduce the model:** open `training/train_model.ipynb` (its venv installs
+the full stack incl. TensorFlow). The raw datasets live in `training/data/raw/`
+(the large UCDP file is excluded from git). Running the notebook regenerates
+`ml-service/models/model.pkl` and the processed master table.
+
+**To enable real SMS:** set `AFRICAS_TALKING_API_KEY` (and shortcode) in `.env`;
+otherwise alerts are logged in simulated mode.
 
 ---
 
@@ -169,15 +182,20 @@ gateway, environment configuration, and CI/CD.
 
 ## Roadmap
 
+Done in this build:
+
+- ✅ FastAPI `ml-service` serving the model with live Swagger UI.
+- ✅ Express `backend`: JWT auth, per-county predictions, threshold checks, alert
+  engine, and SMS dispatch (simulated until a key is supplied).
+- ✅ Dashboard wired to the live API (no more mock data).
+
 Planned for the **final-product** phase:
 
-1. Implement the FastAPI `ml-service` to serve `model.pkl` (live Swagger UI).
-2. Implement the Express `backend`: user registration, threshold checks, and SMS
-   dispatch via Africa's Talking.
-3. Wire the dashboard to the live API (replace representative data).
-4. Improve the model by forecasting month-over-month change (helps the tree/NN
-   models extrapolate) and add per-county forecasting.
-5. Deploy all services per `docs/DEPLOYMENT.md`.
+1. Improve the model by forecasting month-over-month change (helps the tree/NN
+   models extrapolate) and add genuine per-county forecasting.
+2. Supply live Africa's Talking credentials and schedule the monthly alert run.
+3. Deploy all services to the cloud per `docs/DEPLOYMENT.md` (Dockerfiles and
+   `docker-compose.yml` are included).
 
 ---
 
@@ -186,10 +204,12 @@ Planned for the **final-product** phase:
 ```
 lek/
 ├── README.md
+├── docker-compose.yml   full-stack one-command bring-up
 ├── database/            schema.sql, seed.sql (7 tables, 10 states)
 ├── training/            train_model.ipynb, data/ (raw + processed)
-├── ml-service/          FastAPI service + models/ (model.pkl, metadata)
-├── backend/             Express API (scaffold)
-├── dashboard/           React + Vite admin dashboard
+├── ml-service/          FastAPI service + models/ (model.pkl, metadata, history)
+├── backend/             Express API (auth, predictions, alerts, SMS engine)
+├── dashboard/           React + Vite admin dashboard (live API)
+├── scripts/             run-local.sh
 └── docs/                DEPLOYMENT.md, screenshots/
 ```

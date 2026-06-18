@@ -22,6 +22,7 @@ export function RiskBadge({ level }) {
 }
 
 const STATUS_DOT = {
+  sent: 'bg-good',
   delivered: 'bg-good',
   pending: 'bg-warn',
   failed: 'bg-bad',
@@ -29,6 +30,7 @@ const STATUS_DOT = {
 }
 
 const STATUS_TEXT = {
+  sent: 'text-good',
   delivered: 'text-good',
   pending: 'text-warn',
   failed: 'text-bad',
