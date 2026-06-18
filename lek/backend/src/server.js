@@ -4,6 +4,7 @@ const cors = require('cors');
 const config = require('./config');
 const { query, pool } = require('./db/pool');
 const mlService = require('./services/mlService');
+const scheduler = require('./services/scheduler');
 const { requireAuth } = require('./middleware/auth');
 
 const ALLOWED_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173'];
@@ -11,9 +12,11 @@ const ALLOWED_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173'];
 const app = express();
 app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: false })); // Africa's Talking USSD posts form-urlencoded
 
 // --- public routes ---
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/ussd', require('./routes/ussd')); // PUBLIC: AT USSD callback (no JWT)
 
 // Health: reports backend status + whether the DB and ML service are reachable.
 app.get('/api/health', async (_req, res) => {
@@ -43,6 +46,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/alerts', require('./routes/alerts'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/scheduler', require('./routes/scheduler'));
 
 // Consistent JSON errors (no raw stack traces to clients).
 app.use((err, _req, res, _next) => {
@@ -62,6 +66,8 @@ async function start() {
   app.listen(config.port, () => {
     console.log(`[backend] listening on http://localhost:${config.port}`);
     console.log(`[backend] ml-service: ${config.mlServiceUrl}`);
+    // Start the monthly predict-then-alert cron (no-op unless SCHEDULER_ENABLED=true).
+    scheduler.start();
   });
 }
 
