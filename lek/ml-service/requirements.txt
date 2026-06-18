@@ -6,7 +6,7 @@ pydantic
 # --- ML / data stack (training + inference) ---
 scikit-learn
 statsmodels
-xgboost
+xgboost==3.2.0
 tensorflow
 pandas
 numpy

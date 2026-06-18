@@ -1,8 +1,10 @@
-# Runtime-only deps for serving the selected ARIMA model (no TensorFlow/XGBoost).
+# Runtime-only deps for serving the deployed XGBoost model (no TensorFlow).
+# xgboost is pinned to the version the model artifact was saved with.
 # Use requirements.txt for the full training + inference stack.
 fastapi
 uvicorn[standard]
-statsmodels
+xgboost==3.2.0
 scikit-learn
+statsmodels
 pandas
 joblib
