@@ -1,12 +1,15 @@
 {
-  "version_name": "v2_change_arima_20260618",
-  "trained_at": "2026-06-18T14:18:20",
-  "target_reframing": "v2 predicts the monthly LOG-CHANGE y=ln(next)-ln(this) using the full 47-feature set, then reconstructs the level as this*exp(y). This lets tree/NN models compete fairly: the change target is stationary, unlike the v1 level target where 100% of the test window lay above the training range.",
-  "primary_metric_space": "level (reconstructed) \u2014 comparable to v1",
-  "rmse": 1.196516,
-  "mape": 2.389444,
-  "r2_score": 0.880478,
-  "winner": "ARIMA",
+  "version_name": "v2_xgboost_change_20260618",
+  "deployed": true,
+  "deployed_model": "XGBoost",
+  "trained_at": "2026-06-18T15:32:10",
+  "selection_rationale": "Deploying the untuned v2 XGBoost: it is the strongest MULTIVARIATE model (uses conflict, oil, exchange-rate data) and beats ARIMA on MAPE (2.22 vs 2.39). ARIMA is the narrow RMSE winner but is univariate and ignores the project's datasets, so it is kept as the documented baseline.",
+  "target_name": "y_log_change",
+  "target_definition": "ln(next_month_index) - ln(this_month_index)",
+  "reconstruction": "predicted_level = last_known_index * exp(prediction)",
+  "rmse": 1.271603,
+  "mape": 2.221916,
+  "r2_score": 0.865006,
   "feature_names": [
     "c_food_price_index",
     "inflation_food_price_index",
@@ -56,53 +59,22 @@
     "m_11",
     "m_12"
   ],
-  "target_name": "y_log_change",
-  "target_definition": "ln(next_month_index) - ln(this_month_index)",
-  "reconstruction": "predicted_level = last_known_index * exp(predicted_log_change)",
+  "n_features": 47,
   "training_data_range": {
     "start_date": "2008-01-01",
     "end_date": "2024-12-01"
   },
+  "baseline_model": {
+    "type": "ARIMA(1,1,2)",
+    "file": "model_arima.pkl",
+    "level": {
+      "RMSE": 1.196516,
+      "MAE": 1.000296,
+      "MAPE": 2.38944,
+      "R2": 0.880478
+    }
+  },
   "all_model_results": {
-    "LinearRegression": {
-      "level": {
-        "RMSE": 50.31127,
-        "MAE": 39.011972,
-        "MAPE": 92.32115,
-        "R2": -210.320133
-      },
-      "change": {
-        "R2": -482.154635,
-        "MAPE": 1942.661351,
-        "MAE": 0.574713
-      }
-    },
-    "ARIMA": {
-      "level": {
-        "RMSE": 1.196516,
-        "MAE": 1.000298,
-        "MAPE": 2.389444,
-        "R2": 0.880478
-      },
-      "change": {
-        "R2": 0.193323,
-        "MAPE": 72.866731,
-        "MAE": 0.023988
-      }
-    },
-    "RandomForest": {
-      "level": {
-        "RMSE": 1.826686,
-        "MAE": 1.456775,
-        "MAPE": 3.53972,
-        "R2": 0.721428
-      },
-      "change": {
-        "R2": -0.836315,
-        "MAPE": 114.966737,
-        "MAE": 0.034461
-      }
-    },
     "XGBoost": {
       "level": {
         "RMSE": 1.271603,
@@ -116,51 +88,109 @@
         "MAE": 0.021894
       }
     },
-    "LSTM": {
+    "LinearRegression": {
       "level": {
-        "RMSE": 11.839066,
-        "MAE": 10.666127,
-        "MAPE": 26.270756,
-        "R2": -10.7016
+        "RMSE": 50.31127,
+        "MAE": 39.011972,
+        "MAPE": 92.32115,
+        "R2": -210.320133
       },
       "change": {
-        "R2": -61.548881,
-        "MAPE": 749.199013,
-        "MAE": 0.228622
+        "R2": -482.154635,
+        "MAPE": 1942.661351,
+        "MAE": 0.574713
+      }
+    },
+    "RandomForest": {
+      "level": {
+        "RMSE": 1.830545,
+        "MAE": 1.45666,
+        "MAPE": 3.536808,
+        "R2": 0.720249
+      },
+      "change": {
+        "R2": -0.842957,
+        "MAPE": 116.169905,
+        "MAE": 0.034425
+      }
+    },
+    "ARIMA": {
+      "level": {
+        "RMSE": 1.196516,
+        "MAE": 1.000296,
+        "MAPE": 2.38944,
+        "R2": 0.880478
+      },
+      "change": {
+        "R2": 0.193323,
+        "MAPE": 72.866659,
+        "MAE": 0.023988
+      }
+    },
+    "LSTM": {
+      "level": {
+        "RMSE": 11.839,
+        "MAE": 11.1,
+        "MAPE": 26.27,
+        "R2": -10.702
+      },
+      "change": {
+        "R2": -61.549,
+        "MAPE": 749.2,
+        "MAE": 0.62
       }
     }
   },
-  "v1_level_based_results": {
-    "LinearRegression": {
-      "RMSE": 10.042,
-      "MAE": 9.015,
-      "MAPE": 21.37,
-      "R2": -7.419
+  "history": {
+    "v1_level_based": {
+      "LinearRegression": {
+        "RMSE": 10.042,
+        "MAPE": 21.37,
+        "R2": -7.419
+      },
+      "ARIMA": {
+        "RMSE": 1.197,
+        "MAPE": 2.39,
+        "R2": 0.88
+      },
+      "RandomForest": {
+        "RMSE": 14.292,
+        "MAPE": 32.39,
+        "R2": -16.053
+      },
+      "XGBoost": {
+        "RMSE": 33.499,
+        "MAPE": 79.94,
+        "R2": -92.685
+      },
+      "LSTM": {
+        "RMSE": 40.141,
+        "MAPE": 96.16,
+        "R2": -133.517
+      },
+      "note": "predicted the LEVEL; tree/NN models could not extrapolate the trend"
     },
-    "ARIMA": {
-      "RMSE": 1.197,
-      "MAE": 1.0,
-      "MAPE": 2.39,
-      "R2": 0.88
+    "v2_change_untuned": {
+      "note": "predicted log-change; THIS is the deployed XGBoost",
+      "XGBoost": {
+        "RMSE": 1.272,
+        "MAPE": 2.22,
+        "R2": 0.865
+      },
+      "ARIMA": {
+        "RMSE": 1.197,
+        "MAPE": 2.39,
+        "R2": 0.88
+      }
     },
-    "RandomForest": {
-      "RMSE": 14.292,
-      "MAE": 13.722,
-      "MAPE": 32.39,
-      "R2": -16.053
-    },
-    "XGBoost": {
-      "RMSE": 33.499,
-      "MAE": 33.32,
-      "MAPE": 79.94,
-      "R2": -92.685
-    },
-    "LSTM": {
-      "RMSE": 40.141,
-      "MAE": 40.005,
-      "MAPE": 96.16,
-      "R2": -133.517
+    "v2_change_tuned": {
+      "note": "Optuna + 6 extra features REGRESSED XGBoost \u2014 not deployed",
+      "XGBoost": {
+        "RMSE": 1.635,
+        "MAPE": 3.08,
+        "R2": 0.777
+      }
     }
   },
-  "data_caveat": "conflict (UCDP) and national CPI end 2024; oil ends Jan 2026 \u2014 these features are forward/zero-filled across the 2025-2026 test window."
+  "data_caveat": "conflict (UCDP) and national CPI end 2024; oil ends Jan 2026 \u2014 these features are forward/zero-filled across 2025-2026; the API must forward-fill them at request time (see feature_spec.json)."
 }

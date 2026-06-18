@@ -1,0 +1,343 @@
+{
+  "model": "untuned v2 XGBoost",
+  "version_name": "v2_xgboost_change_20260618",
+  "target_definition": "ln(next_month_index) - ln(this_month_index)",
+  "reconstruction": "predicted_level = last_known_index * exp(prediction)",
+  "n_features": 47,
+  "feature_order": [
+    "c_food_price_index",
+    "inflation_food_price_index",
+    "c_beans",
+    "c_cassava",
+    "c_groundnuts",
+    "c_livestockgoat_male",
+    "c_livestocksheep_male",
+    "c_maize",
+    "c_maize_meal",
+    "c_millet",
+    "c_oil",
+    "c_salt",
+    "c_sesame",
+    "c_sorghum",
+    "c_sugar",
+    "c_wheat_flour",
+    "exchange_rate",
+    "oil_production",
+    "national_cpi",
+    "pipeline_flowing",
+    "is_lean_season",
+    "season_ord",
+    "fpi_lag1",
+    "fpi_lag3",
+    "fpi_lag6",
+    "fpi_lag12",
+    "fpi_roll3",
+    "fpi_roll6",
+    "fx_lag1",
+    "fx_lag3",
+    "oil_lag1",
+    "conflict_events_ssd_lag1",
+    "conflict_deaths_ssd_lag1",
+    "conflict_events_sdn_lag1",
+    "conflict_deaths_sdn_lag1",
+    "m_1",
+    "m_2",
+    "m_3",
+    "m_4",
+    "m_5",
+    "m_6",
+    "m_7",
+    "m_8",
+    "m_9",
+    "m_10",
+    "m_11",
+    "m_12"
+  ],
+  "as_of_month": "2026-04-01",
+  "last_known_index": 46.81525,
+  "note": "last_value is the most recent known value for each feature (stale conflict/oil/CPI features are already forward/zero-filled in the processed data). The Phase-3 API assembles the vector in feature_order.",
+  "features": [
+    {
+      "name": "c_food_price_index",
+      "dtype": "float",
+      "computation": "current month food price index (mean across 40 markets)",
+      "last_value": 46.81525
+    },
+    {
+      "name": "inflation_food_price_index",
+      "dtype": "float",
+      "computation": "current month month-over-month food inflation",
+      "last_value": 23.471
+    },
+    {
+      "name": "c_beans",
+      "dtype": "float",
+      "computation": "current month price of beans",
+      "last_value": 15536.264749999998
+    },
+    {
+      "name": "c_cassava",
+      "dtype": "float",
+      "computation": "current month price of cassava",
+      "last_value": 9006.6145
+    },
+    {
+      "name": "c_groundnuts",
+      "dtype": "float",
+      "computation": "current month price of groundnuts",
+      "last_value": 11104.77775
+    },
+    {
+      "name": "c_livestockgoat_male",
+      "dtype": "float",
+      "computation": "current month price of livestockgoat male",
+      "last_value": 320000.79625
+    },
+    {
+      "name": "c_livestocksheep_male",
+      "dtype": "float",
+      "computation": "current month price of livestocksheep male",
+      "last_value": 349501.7715
+    },
+    {
+      "name": "c_maize",
+      "dtype": "float",
+      "computation": "current month price of maize",
+      "last_value": 15526.3855
+    },
+    {
+      "name": "c_maize_meal",
+      "dtype": "float",
+      "computation": "current month price of maize meal",
+      "last_value": 9542.24825
+    },
+    {
+      "name": "c_millet",
+      "dtype": "float",
+      "computation": "current month price of millet",
+      "last_value": 16312.9705
+    },
+    {
+      "name": "c_oil",
+      "dtype": "float",
+      "computation": "current month price of oil",
+      "last_value": 19075.320249999997
+    },
+    {
+      "name": "c_salt",
+      "dtype": "float",
+      "computation": "current month price of salt",
+      "last_value": 6643.84325
+    },
+    {
+      "name": "c_sesame",
+      "dtype": "float",
+      "computation": "current month price of sesame",
+      "last_value": 25685.10875
+    },
+    {
+      "name": "c_sorghum",
+      "dtype": "float",
+      "computation": "current month price of sorghum",
+      "last_value": 16482.677
+    },
+    {
+      "name": "c_sugar",
+      "dtype": "float",
+      "computation": "current month price of sugar",
+      "last_value": 11359.37025
+    },
+    {
+      "name": "c_wheat_flour",
+      "dtype": "float",
+      "computation": "current month price of wheat flour",
+      "last_value": 10633.801
+    },
+    {
+      "name": "exchange_rate",
+      "dtype": "float",
+      "computation": "current month unofficial exchange rate (market mean)",
+      "last_value": 6006.9
+    },
+    {
+      "name": "oil_production",
+      "dtype": "float",
+      "computation": "current month oil production (Mb/d); stale after 2026-01, forward-filled",
+      "last_value": 100.0
+    },
+    {
+      "name": "national_cpi",
+      "dtype": "float",
+      "computation": "national CPI inflation %, annual forward-filled; stale after 2024",
+      "last_value": 91.4408220769046
+    },
+    {
+      "name": "pipeline_flowing",
+      "dtype": "int",
+      "computation": "oil pipeline flowing flag (1/0) for the current month",
+      "last_value": 1.0
+    },
+    {
+      "name": "is_lean_season",
+      "dtype": "int",
+      "computation": "1 if current month is in the lean season (May-Jul), else 0",
+      "last_value": 0.0
+    },
+    {
+      "name": "season_ord",
+      "dtype": "int",
+      "computation": "season ordinal ({'dry': 0, 'harvest': 1, 'rainy': 2})",
+      "last_value": 2.0
+    },
+    {
+      "name": "fpi_lag1",
+      "dtype": "float",
+      "computation": "food price index lagged 1 month(s)",
+      "last_value": 44.06375
+    },
+    {
+      "name": "fpi_lag3",
+      "dtype": "float",
+      "computation": "food price index lagged 3 month(s)",
+      "last_value": 41.97925
+    },
+    {
+      "name": "fpi_lag6",
+      "dtype": "float",
+      "computation": "food price index lagged 6 month(s)",
+      "last_value": 42.9505
+    },
+    {
+      "name": "fpi_lag12",
+      "dtype": "float",
+      "computation": "food price index lagged 12 month(s)",
+      "last_value": 38.2525
+    },
+    {
+      "name": "fpi_roll3",
+      "dtype": "float",
+      "computation": "3-month rolling mean of the food price index",
+      "last_value": 44.36766666666667
+    },
+    {
+      "name": "fpi_roll6",
+      "dtype": "float",
+      "computation": "6-month rolling mean of the food price index",
+      "last_value": 42.950291666666665
+    },
+    {
+      "name": "fx_lag1",
+      "dtype": "float",
+      "computation": "exchange rate lagged 1 month",
+      "last_value": 5773.21
+    },
+    {
+      "name": "fx_lag3",
+      "dtype": "float",
+      "computation": "exchange rate lagged 3 months",
+      "last_value": 5596.52
+    },
+    {
+      "name": "oil_lag1",
+      "dtype": "float",
+      "computation": "oil production lagged 1 month",
+      "last_value": 100.0
+    },
+    {
+      "name": "conflict_events_ssd_lag1",
+      "dtype": "float",
+      "computation": "South Sudan conflict event count lag 1 month; stale after 2024 -> 0",
+      "last_value": 0.0
+    },
+    {
+      "name": "conflict_deaths_ssd_lag1",
+      "dtype": "float",
+      "computation": "South Sudan conflict deaths lag 1 month; stale after 2024 -> 0",
+      "last_value": 0.0
+    },
+    {
+      "name": "conflict_events_sdn_lag1",
+      "dtype": "float",
+      "computation": "Sudan conflict event count lag 1 month; stale after 2024 -> 0",
+      "last_value": 0.0
+    },
+    {
+      "name": "conflict_deaths_sdn_lag1",
+      "dtype": "float",
+      "computation": "Sudan conflict deaths lag 1 month; stale after 2024 -> 0",
+      "last_value": 0.0
+    },
+    {
+      "name": "m_1",
+      "dtype": "int",
+      "computation": "month-of-year one-hot: 1 if current month == 1",
+      "last_value": 0.0
+    },
+    {
+      "name": "m_2",
+      "dtype": "int",
+      "computation": "month-of-year one-hot: 1 if current month == 2",
+      "last_value": 0.0
+    },
+    {
+      "name": "m_3",
+      "dtype": "int",
+      "computation": "month-of-year one-hot: 1 if current month == 3",
+      "last_value": 0.0
+    },
+    {
+      "name": "m_4",
+      "dtype": "int",
+      "computation": "month-of-year one-hot: 1 if current month == 4",
+      "last_value": 1.0
+    },
+    {
+      "name": "m_5",
+      "dtype": "int",
+      "computation": "month-of-year one-hot: 1 if current month == 5",
+      "last_value": 0.0
+    },
+    {
+      "name": "m_6",
+      "dtype": "int",
+      "computation": "month-of-year one-hot: 1 if current month == 6",
+      "last_value": 0.0
+    },
+    {
+      "name": "m_7",
+      "dtype": "int",
+      "computation": "month-of-year one-hot: 1 if current month == 7",
+      "last_value": 0.0
+    },
+    {
+      "name": "m_8",
+      "dtype": "int",
+      "computation": "month-of-year one-hot: 1 if current month == 8",
+      "last_value": 0.0
+    },
+    {
+      "name": "m_9",
+      "dtype": "int",
+      "computation": "month-of-year one-hot: 1 if current month == 9",
+      "last_value": 0.0
+    },
+    {
+      "name": "m_10",
+      "dtype": "int",
+      "computation": "month-of-year one-hot: 1 if current month == 10",
+      "last_value": 0.0
+    },
+    {
+      "name": "m_11",
+      "dtype": "int",
+      "computation": "month-of-year one-hot: 1 if current month == 11",
+      "last_value": 0.0
+    },
+    {
+      "name": "m_12",
+      "dtype": "int",
+      "computation": "month-of-year one-hot: 1 if current month == 12",
+      "last_value": 0.0
+    }
+  ]
+}
