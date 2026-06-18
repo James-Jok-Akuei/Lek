@@ -10,14 +10,14 @@
     "test": "node --test"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "cors": "^2.8.5",
-    "pg": "^8.11.5",
-    "dotenv": "^16.4.5",
-    "jsonwebtoken": "^9.0.2",
+    "africastalking": "^0.7.0",
     "bcrypt": "^5.1.1",
-    "africastalking": "^0.7.0"
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "node-cron": "^4.4.1",
+    "pg": "^8.11.5"
   },
-  "devDependencies": {},
   "license": "MIT"
 }

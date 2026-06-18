@@ -8,6 +8,9 @@ module.exports = {
   mlServiceUrl: process.env.ML_SERVICE_URL || 'http://localhost:8000',
   jwtSecret: process.env.JWT_SECRET || 'dev-secret',
   nodeEnv: process.env.NODE_ENV || 'development',
+  // Monthly predict-then-alert cron job. Off unless explicitly set to "true"
+  // so it never fires during local dev/tests; trigger manually via the route.
+  schedulerEnabled: process.env.SCHEDULER_ENABLED === 'true',
   africasTalking: {
     username: process.env.AFRICAS_TALKING_USERNAME || 'sandbox',
     apiKey: process.env.AFRICAS_TALKING_API_KEY || '',
