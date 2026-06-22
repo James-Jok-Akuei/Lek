@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { Search, Plus, X } from 'lucide-react'
+import { Search, Plus, X, Pencil, Trash2 } from 'lucide-react'
 import { StatusBadge } from '../components/Badge'
-import { useAsync, getUsers, getCounties, registerUser } from '../api'
+import { useAsync, getUsers, getCounties, createUser, updateUser, deleteUser } from '../api'
 
 function AddUserModal({ open, onClose, counties, onSubmit }) {
   const [phone, setPhone] = useState('+211 9')
@@ -45,7 +45,7 @@ function AddUserModal({ open, onClose, counties, onSubmit }) {
           </button>
         </div>
 
-        {/* Registers a real subscriber via POST /api/users/register. */}
+        {/* Registers a real subscriber via POST /api/users. */}
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div>
             <label className="mb-2 block text-[13px] font-medium text-ink-soft">Phone number</label>
@@ -105,9 +105,169 @@ function AddUserModal({ open, onClose, counties, onSubmit }) {
   )
 }
 
+// Edit an existing subscriber's county, language and status (PATCH /api/users/:id).
+// Phone number is shown read-only — the backend keys users by phone. The parent
+// remounts this via key={user.id}, so state initialises straight from props.
+function EditUserModal({ user, onClose, counties, onSubmit }) {
+  const [countyId, setCountyId] = useState(String(user.countyId ?? ''))
+  const [lang, setLang] = useState(user.language || 'en')
+  const [status, setStatus] = useState(user.status || 'active')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function submit(e) {
+    e.preventDefault()
+    setErr('')
+    setSaving(true)
+    try {
+      await onSubmit(user.id, {
+        county_id: Number(countyId),
+        language_preference: lang,
+        status,
+      })
+      onClose()
+    } catch (e2) {
+      setErr(e2.message || 'Could not update user')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-ink/20" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-3xl bg-surface p-7">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-ink">Edit user</h2>
+            <p className="mt-0.5 text-sm text-muted tnum">{user.phone}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full p-1.5 text-muted transition hover:bg-canvas hover:text-ink"
+          >
+            <X size={18} strokeWidth={1.8} />
+          </button>
+        </div>
+
+        <form onSubmit={submit} className="mt-6 space-y-4">
+          <div>
+            <label className="mb-2 block text-[13px] font-medium text-ink-soft">County</label>
+            <select
+              value={countyId}
+              onChange={(e) => setCountyId(e.target.value)}
+              className="w-full rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-sm outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/10"
+            >
+              {counties.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-2 block text-[13px] font-medium text-ink-soft">Language</label>
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value)}
+              className="w-full rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-sm outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/10"
+            >
+              <option value="en">English</option>
+              <option value="ar">Arabic</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-2 block text-[13px] font-medium text-ink-soft">Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-sm outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/10"
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="unsubscribed">Unsubscribed</option>
+            </select>
+          </div>
+
+          {err && <p className="text-sm font-medium text-bad">{err}</p>}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full border border-line-strong px-5 py-2 text-sm font-medium text-ink-soft transition hover:bg-canvas"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-full bg-forest px-5 py-2 text-sm font-semibold text-white transition hover:bg-forest-hover disabled:opacity-60"
+            >
+              {saving ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// Confirm before removing a subscriber (DELETE /api/users/:id).
+function DeleteUserModal({ user, onClose, onConfirm }) {
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+  if (!user) return null
+
+  async function confirm() {
+    setErr('')
+    setSaving(true)
+    try {
+      await onConfirm(user.id)
+      onClose()
+    } catch (e2) {
+      setErr(e2.message || 'Could not delete user')
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-ink/20" onClick={onClose} />
+      <div className="relative w-full max-w-sm rounded-3xl bg-surface p-7">
+        <h2 className="text-lg font-semibold text-ink">Remove user?</h2>
+        <p className="mt-1 text-sm text-muted">
+          <span className="tnum font-medium text-ink-soft">{user.phone}</span> will stop receiving
+          SMS price warnings. This cannot be undone.
+        </p>
+
+        {err && <p className="mt-4 text-sm font-medium text-bad">{err}</p>}
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-line-strong px-5 py-2 text-sm font-medium text-ink-soft transition hover:bg-canvas"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={confirm}
+            disabled={saving}
+            className="rounded-full bg-bad px-5 py-2 text-sm font-semibold text-white transition hover:bg-bad/90 disabled:opacity-60"
+          >
+            {saving ? 'Removing…' : 'Remove'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Users() {
   const [query, setQuery] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
+  const [editUser, setEditUser] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
   const [tick, setTick] = useState(0)
 
   const { data: usersData, loading, error } = useAsync(getUsers, [tick])
@@ -116,7 +276,17 @@ export default function Users() {
   const counties = countiesData || []
 
   async function handleRegister(payload) {
-    await registerUser(payload)
+    await createUser(payload)
+    setTick((t) => t + 1)
+  }
+
+  async function handleUpdate(id, payload) {
+    await updateUser(id, payload)
+    setTick((t) => t + 1)
+  }
+
+  async function handleDelete(id) {
+    await deleteUser(id)
     setTick((t) => t + 1)
   }
 
@@ -171,7 +341,8 @@ export default function Users() {
                 <th className="px-6 py-3.5">County</th>
                 <th className="px-6 py-3.5">Language</th>
                 <th className="px-6 py-3.5">Status</th>
-                <th className="rounded-r-xl px-6 py-3.5">Registered</th>
+                <th className="px-6 py-3.5">Registered</th>
+                <th className="rounded-r-xl px-6 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -186,11 +357,29 @@ export default function Users() {
                   <td className="tnum h-14 px-6 text-ink-soft">
                     {u.registeredAt ? new Date(u.registeredAt).toLocaleDateString() : '—'}
                   </td>
+                  <td className="h-14 px-6">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => setEditUser(u)}
+                        title="Edit user"
+                        className="grid h-8 w-8 place-items-center rounded-full text-muted transition hover:bg-canvas hover:text-ink"
+                      >
+                        <Pencil size={15} strokeWidth={1.8} />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(u)}
+                        title="Remove user"
+                        className="grid h-8 w-8 place-items-center rounded-full text-muted transition hover:bg-canvas hover:text-bad"
+                      >
+                        <Trash2 size={15} strokeWidth={1.8} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-muted">
+                  <td colSpan={6} className="px-6 py-12 text-center text-muted">
                     No users match “{query}”.
                   </td>
                 </tr>
@@ -209,6 +398,20 @@ export default function Users() {
         onClose={() => setModalOpen(false)}
         counties={counties}
         onSubmit={handleRegister}
+      />
+      {editUser && (
+        <EditUserModal
+          key={editUser.id}
+          user={editUser}
+          onClose={() => setEditUser(null)}
+          counties={counties}
+          onSubmit={handleUpdate}
+        />
+      )}
+      <DeleteUserModal
+        user={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
       />
     </div>
   )

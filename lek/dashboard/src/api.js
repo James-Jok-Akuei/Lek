@@ -49,12 +49,24 @@ export const logout = () => clearToken()
 // --- raw fetchers ---
 export const getCounties = () => req('/counties')
 export const getPredictions = () => req('/predictions')
-export const getUsers = () => req('/users')
+export const getUsers = (county) => req(county ? `/users?county=${encodeURIComponent(county)}` : '/users')
 export const getAlerts = () => req('/alerts')
 export const getStats = () => req('/stats')
 export const runAlerts = () => req('/alerts/run', { method: 'POST' })
 export const registerUser = (body) =>
   req('/users/register', { method: 'POST', body: JSON.stringify(body) })
+
+// --- Phase 8 endpoints (named per the API spec) ---
+export const getSummary = () => req('/dashboard/summary')
+export const getLatestPredictions = () => req('/predictions/latest')
+export const createUser = (body) =>
+  req('/users', { method: 'POST', body: JSON.stringify(body) })
+export const updateUser = (id, body) =>
+  req(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+export const deleteUser = (id) => req(`/users/${id}`, { method: 'DELETE' })
+export const sendTestAlert = (body) =>
+  req('/alerts/test', { method: 'POST', body: JSON.stringify(body) })
+export const runScheduler = () => req('/scheduler/run-now', { method: 'POST' })
 
 // --- shaped fetchers ---
 function monthLabel(d) {
