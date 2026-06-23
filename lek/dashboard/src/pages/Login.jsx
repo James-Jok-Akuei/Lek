@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import { login } from '../api'
 
 export default function Login() {
@@ -8,6 +9,7 @@ export default function Login() {
   const [password, setPassword] = useState('admin123')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   // Real auth: POST to the backend, store the JWT, then enter the dashboard.
   async function handleSubmit(e) {
@@ -54,13 +56,24 @@ export default function Login() {
           {/* Password */}
           <div className="rounded-lg border border-line-strong px-5 py-3 transition focus-within:border-forest/50 focus-within:ring-2 focus-within:ring-forest/10">
             <label className="block text-xs font-medium text-faint">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              className="mt-0.5 w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-faint"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="mt-0.5 w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-faint"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                title={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="shrink-0 rounded-md p-1 text-faint transition hover:text-ink"
+              >
+                {showPassword ? <EyeOff size={18} strokeWidth={1.8} /> : <Eye size={18} strokeWidth={1.8} />}
+              </button>
+            </div>
           </div>
 
           {error && (
