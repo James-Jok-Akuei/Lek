@@ -79,7 +79,6 @@ services:
   - type: web
     name: lek-dashboard
     runtime: static
-    plan: free
     rootDir: lek/dashboard
     buildCommand: npm install && npm run build
     staticPublishPath: dist
