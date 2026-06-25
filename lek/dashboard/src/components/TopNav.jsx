@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { LayoutGrid, TrendingUp, Users, Bell, ShieldCheck, LogOut } from 'lucide-react'
 import Logo from './Logo'
@@ -40,8 +41,11 @@ function NavItem({ item }) {
 
 export default function TopNav() {
   const navigate = useNavigate()
-  const isSuperadmin = getCurrentAdmin()?.role === 'superadmin'
+  const me = getCurrentAdmin()
+  const isSuperadmin = me?.role === 'superadmin'
   const items = navItems.filter((item) => !item.superadminOnly || isSuperadmin)
+  const username = me?.username || 'Admin'
+  const [confirmOpen, setConfirmOpen] = useState(false)
   function handleLogout() {
     logout()
     navigate('/login', { replace: true })
@@ -59,20 +63,57 @@ export default function TopNav() {
           </nav>
           <div className="hidden h-6 w-px bg-line md:block" />
           <div className="flex items-center gap-2.5">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-lilac text-sm font-semibold text-lilac-ink">
-              A
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-lilac text-sm font-semibold uppercase text-lilac-ink">
+              {username.charAt(0)}
             </span>
-            <span className="hidden text-sm font-medium text-ink sm:inline">Welcome, Admin</span>
+            <span className="hidden text-sm font-medium text-ink sm:inline">{username}</span>
             <button
-              onClick={handleLogout}
-              title="Sign out"
-              className="ml-1 grid h-8 w-8 place-items-center rounded-full text-muted transition hover:bg-canvas hover:text-ink"
+              onClick={() => setConfirmOpen(true)}
+              className="ml-1 inline-flex items-center gap-2 rounded-full border border-line-strong px-4 py-2 text-sm font-semibold text-ink-soft transition hover:bg-canvas hover:text-ink"
             >
               <LogOut size={16} strokeWidth={1.8} />
+              Sign out
             </button>
           </div>
         </div>
       </div>
+
+      {confirmOpen && (
+        <SignOutModal onClose={() => setConfirmOpen(false)} onConfirm={handleLogout} />
+      )}
     </header>
+  )
+}
+
+// Confirmation before signing out, so an accidental click doesn't end the session.
+function SignOutModal({ onClose, onConfirm }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-ink/20" onClick={onClose} />
+      <div className="relative w-full max-w-sm rounded-3xl bg-surface p-7">
+        <h2 className="text-lg font-semibold text-ink">Sign out?</h2>
+        <p className="mt-1 text-sm text-muted">
+          You will be returned to the login screen and need to sign in again to continue.
+        </p>
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-line-strong px-5 py-2 text-sm font-medium text-ink-soft transition hover:bg-canvas"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="inline-flex items-center gap-2 rounded-full bg-forest px-5 py-2 text-sm font-semibold text-white transition hover:bg-forest-hover"
+          >
+            <LogOut size={15} strokeWidth={2} />
+            Sign out
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
