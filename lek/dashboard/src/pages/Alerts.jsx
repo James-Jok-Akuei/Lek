@@ -59,13 +59,13 @@ function TestAlertModal({ open, onClose, counties, onSent }) {
             />
           </div>
           <div>
-            <label className="mb-2 block text-[13px] font-medium text-ink-soft">County (optional)</label>
+            <label className="mb-2 block text-[13px] font-medium text-ink-soft">State (optional)</label>
             <select
               value={county}
               onChange={(e) => setCounty(e.target.value)}
               className="w-full rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-sm outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/10"
             >
-              <option value="">Sample county</option>
+              <option value="">Sample state</option>
               {counties.map((c) => (
                 <option key={c.id} value={c.name}>{c.name}</option>
               ))}
@@ -183,7 +183,7 @@ export default function Alerts() {
             <thead className="sticky top-0 z-10">
               <tr className="bg-khaki text-left text-[13px] font-semibold text-ink-soft">
                 <th className="rounded-l-xl px-6 py-3.5">Phone Number</th>
-                <th className="px-6 py-3.5">County</th>
+                <th className="px-6 py-3.5">State</th>
                 <th className="px-6 py-3.5 min-w-[24rem]">Message</th>
                 <th className="px-6 py-3.5">Channel</th>
                 <th className="px-6 py-3.5">Status</th>

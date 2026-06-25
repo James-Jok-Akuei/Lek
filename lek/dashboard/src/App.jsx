@@ -5,11 +5,20 @@ import Overview from './pages/Overview'
 import Predictions from './pages/Predictions'
 import Users from './pages/Users'
 import Alerts from './pages/Alerts'
-import { isAuthed } from './api'
+import Admins from './pages/Admins'
+import { isAuthed, getCurrentAdmin } from './api'
 
 // Redirect to the login screen if there is no valid session token.
 function RequireAuth({ children }) {
   return isAuthed() ? children : <Navigate to="/login" replace />
+}
+
+// Superadmin-only route guard. A regular admin who types the URL directly is
+// redirected back to the dashboard (the API is the real enforcement).
+function RequireSuperadmin({ children }) {
+  return getCurrentAdmin()?.role === 'superadmin'
+    ? children
+    : <Navigate to="/dashboard" replace />
 }
 
 export default function App() {
@@ -31,6 +40,14 @@ export default function App() {
         <Route path="predictions" element={<Predictions />} />
         <Route path="users" element={<Users />} />
         <Route path="alerts" element={<Alerts />} />
+        <Route
+          path="admins"
+          element={
+            <RequireSuperadmin>
+              <Admins />
+            </RequireSuperadmin>
+          }
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />

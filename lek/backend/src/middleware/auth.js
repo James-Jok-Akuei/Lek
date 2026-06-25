@@ -14,4 +14,13 @@ function requireAuth(req, res, next) {
   }
 }
 
-module.exports = { requireAuth };
+// Gate for superadmin-only routes (e.g. admin management). Must run AFTER
+// requireAuth so req.admin (and its role) is populated.
+function requireSuperadmin(req, res, next) {
+  if (!req.admin || req.admin.role !== 'superadmin') {
+    return res.status(403).json({ error: 'forbidden: superadmin only' });
+  }
+  next();
+}
+
+module.exports = { requireAuth, requireSuperadmin };

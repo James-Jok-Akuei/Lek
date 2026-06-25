@@ -1,13 +1,16 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutGrid, TrendingUp, Users, Bell, LogOut } from 'lucide-react'
+import { LayoutGrid, TrendingUp, Users, Bell, ShieldCheck, LogOut } from 'lucide-react'
 import Logo from './Logo'
-import { logout } from '../api'
+import { logout, getCurrentAdmin } from '../api'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutGrid, end: true },
   { to: '/dashboard/predictions', label: 'Predictions', icon: TrendingUp },
   { to: '/dashboard/users', label: 'Users', icon: Users },
   { to: '/dashboard/alerts', label: 'Alerts', icon: Bell },
+  // Admin management is superadmin-only (nav hidden for regular admins; the
+  // route and the API are independently guarded).
+  { to: '/dashboard/admins', label: 'Admins', icon: ShieldCheck, superadminOnly: true },
 ]
 
 function NavItem({ item }) {
@@ -37,6 +40,8 @@ function NavItem({ item }) {
 
 export default function TopNav() {
   const navigate = useNavigate()
+  const isSuperadmin = getCurrentAdmin()?.role === 'superadmin'
+  const items = navItems.filter((item) => !item.superadminOnly || isSuperadmin)
   function handleLogout() {
     logout()
     navigate('/login', { replace: true })
@@ -48,7 +53,7 @@ export default function TopNav() {
 
         <div className="ml-auto flex items-center gap-7">
           <nav className="hidden items-center gap-7 md:flex">
-            {navItems.map((item) => (
+            {items.map((item) => (
               <NavItem key={item.to} item={item} />
             ))}
           </nav>

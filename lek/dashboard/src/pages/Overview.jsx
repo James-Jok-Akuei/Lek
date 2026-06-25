@@ -67,7 +67,7 @@ function StatTiles({ stats }) {
       <StatTile tone="bg-lilac" label="Regions Tracked" value={stats.regionsTracked} />
       <StatTile
         tone="bg-sand"
-        label="Counties at High Risk"
+        label="States at High Risk"
         value={stats.countiesAtHighRisk}
         suffix="of 10 regions"
       />
@@ -75,14 +75,14 @@ function StatTiles({ stats }) {
   )
 }
 
-// Small tag marking county-level figures as illustrative estimates.
+// Small tag marking state-level figures as illustrative estimates.
 function EstimateTag() {
   return (
     <span
-      title="Illustrative — the model forecasts the national index; per-county forecasting is planned."
+      title="Illustrative — the model forecasts the national index; per-state forecasting is planned."
       className="rounded-full bg-canvas px-2.5 py-1 text-[11px] font-medium text-muted"
     >
-      County estimates
+      State estimates
     </span>
   )
 }
@@ -132,7 +132,12 @@ function ForecastsPanel({ counties, highRiskCounties }) {
         <EstimateTag />
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <p className="mt-4 text-[13px] text-muted">
+        All states currently reflect the national forecast; per-state models are planned for
+        future work.
+      </p>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {shown.map((c) => (
           <div key={c.id} className="rounded-2xl border border-line p-4">
             <p className="text-[15px] font-semibold leading-snug text-ink">{c.name}</p>
@@ -255,7 +260,7 @@ function RecentAlerts({ alerts }) {
           <thead className="sticky top-0 z-10">
             <tr className="rounded-xl bg-khaki text-left text-[13px] font-semibold text-ink-soft">
               <th className="rounded-l-xl px-5 py-3.5">Recipient</th>
-              <th className="px-5 py-3.5">County</th>
+              <th className="px-5 py-3.5">State</th>
               <th className="px-5 py-3.5">Sent</th>
               <th className="rounded-r-xl px-5 py-3.5">Status</th>
             </tr>

@@ -43,6 +43,7 @@ app.use('/api', require('./routes/forecast'));        // /api/model, /api/foreca
 app.use('/api/counties', require('./routes/counties'));
 app.use('/api/predictions', require('./routes/predictions'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/admins', require('./routes/admins'));
 app.use('/api/alerts', require('./routes/alerts'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/dashboard', require('./routes/dashboard'));

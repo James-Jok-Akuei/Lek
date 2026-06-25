@@ -15,6 +15,20 @@ export const setToken = (t) => localStorage.setItem(TOKEN_KEY, t)
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY)
 export const isAuthed = () => Boolean(getToken())
 
+// Decode the JWT payload (no verification — display only) to learn who is
+// logged in. Used by the Admins page to block deleting your own account.
+export function getCurrentAdmin() {
+  const t = getToken()
+  if (!t) return null
+  try {
+    const b64 = t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    const payload = JSON.parse(atob(b64))
+    return { id: payload.sub, username: payload.username, role: payload.role }
+  } catch {
+    return null
+  }
+}
+
 async function req(path, opts = {}) {
   const res = await fetch(BASE + path, {
     ...opts,
@@ -67,6 +81,14 @@ export const deleteUser = (id) => req(`/users/${id}`, { method: 'DELETE' })
 export const sendTestAlert = (body) =>
   req('/alerts/test', { method: 'POST', body: JSON.stringify(body) })
 export const runScheduler = () => req('/scheduler/run-now', { method: 'POST' })
+
+// --- admin account management ---
+export const getAdmins = () => req('/admins')
+export const createAdmin = (body) =>
+  req('/admins', { method: 'POST', body: JSON.stringify(body) })
+export const changeAdminPassword = (id, password) =>
+  req(`/admins/${id}/password`, { method: 'PATCH', body: JSON.stringify({ password }) })
+export const deleteAdmin = (id) => req(`/admins/${id}`, { method: 'DELETE' })
 
 // --- shaped fetchers ---
 function monthLabel(d) {

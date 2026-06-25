@@ -1,10 +1,16 @@
 // Seeds demo data: an admin user, SMS subscribers across counties, and per-county
 // thresholds. Idempotent — safe to run repeatedly. Run: node scripts/seed.js
+const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { pool, query } = require('../src/db/pool');
 
 const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'admin123'; // demo only — change in production
+// The first admin's password comes from ADMIN_INITIAL_PASSWORD in .env. If it is
+// not set, we generate a strong random one and print it ONCE so it can be saved.
+function generateStrongPassword() {
+  // ~22 url-safe chars of entropy — strong and easy to copy from the log.
+  return crypto.randomBytes(16).toString('base64url');
+}
 
 // A few subscribers per county (phone, county name, language).
 const SUBSCRIBERS = [
@@ -24,13 +30,61 @@ const SUBSCRIBERS = [
 
 async function main() {
   // --- admin ---
-  const hash = await bcrypt.hash(ADMIN_PASS, 10);
-  await query(
-    `INSERT INTO admin_users (username, password_hash, role)
-     VALUES ($1, $2, 'admin')
-     ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash`,
-    [ADMIN_USER, hash]);
-  console.log(`admin user ready: ${ADMIN_USER} / ${ADMIN_PASS}`);
+  // The primary admin is the single 'superadmin' (RBAC). On first creation we
+  // set that role; for an EXISTING admin we never silently change its role.
+  const existing = await query('SELECT id, role FROM admin_users WHERE username = $1', [ADMIN_USER]);
+  const envPassword = process.env.ADMIN_INITIAL_PASSWORD;
+  const promote = process.env.PROMOTE_TO_SUPERADMIN === 'true';
+
+  if (existing.rowCount === 0) {
+    // Fresh install: create the primary admin AS superadmin.
+    const generated = !envPassword;
+    const password = envPassword || generateStrongPassword();
+    const hash = await bcrypt.hash(password, 10);
+    await query(
+      `INSERT INTO admin_users (username, password_hash, role)
+       VALUES ($1, $2, 'superadmin')`,
+      [ADMIN_USER, hash]);
+
+    if (generated) {
+      console.log('\n  ┌─────────────────────────────────────────────────────────────┐');
+      console.log('  │  ADMIN_INITIAL_PASSWORD was not set — a strong password was   │');
+      console.log('  │  generated. Save it now; it will NOT be shown again:          │');
+      console.log(`  │    username: ${ADMIN_USER}  (role: superadmin)`);
+      console.log(`  │    password: ${password}`);
+      console.log('  └─────────────────────────────────────────────────────────────┘\n');
+    } else {
+      console.log(`admin user ready: ${ADMIN_USER} (superadmin, password from ADMIN_INITIAL_PASSWORD)`);
+    }
+  } else {
+    const current = existing.rows[0];
+
+    // Password: only touched if explicitly provided via env.
+    if (envPassword) {
+      const hash = await bcrypt.hash(envPassword, 10);
+      await query('UPDATE admin_users SET password_hash = $1 WHERE id = $2', [hash, current.id]);
+      console.log(`admin user "${ADMIN_USER}" password updated from ADMIN_INITIAL_PASSWORD.`);
+    } else {
+      console.log(`admin user "${ADMIN_USER}" already exists — password left unchanged.`);
+    }
+
+    // Role: never changed silently. Promote only on an explicit opt-in flag.
+    if (current.role === 'superadmin') {
+      console.log(`admin user "${ADMIN_USER}" is already a superadmin.`);
+    } else if (promote) {
+      await query(`UPDATE admin_users SET role = 'superadmin' WHERE id = $1`, [current.id]);
+      console.log(`admin user "${ADMIN_USER}" promoted to superadmin.`);
+    } else {
+      console.log('\n  ┌─────────────────────────────────────────────────────────────┐');
+      console.log(`  │  NOTE: "${ADMIN_USER}" has role '${current.role}', not 'superadmin'.`);
+      console.log('  │  RBAC admin-management requires a superadmin. To promote it:   │');
+      console.log('  │    • re-run:  PROMOTE_TO_SUPERADMIN=true node scripts/seed.js  │');
+      console.log("  │    • or SQL:  UPDATE admin_users SET role='superadmin'         │");
+      console.log(`  │               WHERE username='${ADMIN_USER}';`);
+      console.log('  │  (then log out and back in so the new role is in your token)   │');
+      console.log('  └─────────────────────────────────────────────────────────────┘\n');
+    }
+  }
 
   // --- county id lookup ---
   const { rows: counties } = await query('SELECT id, name FROM counties');
