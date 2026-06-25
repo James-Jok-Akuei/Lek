@@ -58,7 +58,7 @@ function AddUserModal({ open, onClose, counties, onSubmit }) {
             />
           </div>
           <div>
-            <label className="mb-2 block text-[13px] font-medium text-ink-soft">County</label>
+            <label className="mb-2 block text-[13px] font-medium text-ink-soft">State</label>
             <select
               value={countyId}
               onChange={(e) => setCountyId(e.target.value)}
@@ -152,7 +152,7 @@ function EditUserModal({ user, onClose, counties, onSubmit }) {
 
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div>
-            <label className="mb-2 block text-[13px] font-medium text-ink-soft">County</label>
+            <label className="mb-2 block text-[13px] font-medium text-ink-soft">State</label>
             <select
               value={countyId}
               onChange={(e) => setCountyId(e.target.value)}
@@ -327,7 +327,7 @@ export default function Users() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search county or phone…"
+          placeholder="Search state or phone…"
           className="w-full rounded-full border border-line-strong bg-surface py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/10"
         />
       </div>
@@ -338,7 +338,7 @@ export default function Users() {
             <thead className="sticky top-0 z-10">
               <tr className="bg-khaki text-left text-[13px] font-semibold text-ink-soft">
                 <th className="rounded-l-xl px-6 py-3.5">Phone Number</th>
-                <th className="px-6 py-3.5">County</th>
+                <th className="px-6 py-3.5">State</th>
                 <th className="px-6 py-3.5">Language</th>
                 <th className="px-6 py-3.5">Status</th>
                 <th className="px-6 py-3.5">Registered</th>
