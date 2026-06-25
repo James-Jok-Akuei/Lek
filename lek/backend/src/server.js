@@ -7,10 +7,8 @@ const mlService = require('./services/mlService');
 const scheduler = require('./services/scheduler');
 const { requireAuth } = require('./middleware/auth');
 
-const ALLOWED_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173'];
-
 const app = express();
-app.use(cors({ origin: ALLOWED_ORIGINS }));
+app.use(cors({ origin: config.allowedOrigins }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false })); // Africa's Talking USSD posts form-urlencoded
 

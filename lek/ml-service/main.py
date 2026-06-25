@@ -13,6 +13,7 @@ Endpoints:
 """
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
@@ -21,10 +22,14 @@ from pydantic import BaseModel, Field
 
 import predictor
 
-# Allowed browser origins (the Vite dashboard in local dev).
+# Allowed browser origins (CORS). Comma-separated list in ALLOWED_ORIGINS for
+# production (the deployed dashboard/backend URLs); defaults to the local Vite
+# dev server so local development needs no extra configuration.
+_DEFAULT_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    o.strip()
+    for o in os.getenv("ALLOWED_ORIGINS", _DEFAULT_ORIGINS).split(",")
+    if o.strip()
 ]
 
 
