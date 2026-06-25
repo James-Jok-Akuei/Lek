@@ -11,10 +11,14 @@ router.get('/', async (_req, res) => {
     query(`SELECT COUNT(*)::int AS n FROM alerts
            WHERE delivery_status = 'sent'
              AND date_trunc('month', sent_at) = date_trunc('month', CURRENT_DATE)`),
+    // Distinct states whose LATEST prediction is High risk (>15%, matching the
+    // Predictions page). DISTINCT ON collapses repeated prediction runs so each
+    // state is counted once — otherwise multiple runs inflate the count.
     query(`SELECT COUNT(*)::int AS n FROM (
-             SELECT county_id, predicted_change_pct FROM predictions
-             WHERE prediction_date = (SELECT MAX(prediction_date) FROM predictions)
-           ) t WHERE predicted_change_pct >= 5`),
+             SELECT DISTINCT ON (county_id) county_id, predicted_change_pct
+             FROM predictions
+             ORDER BY county_id, prediction_date DESC, id DESC
+           ) t WHERE predicted_change_pct > 15`),
   ]);
   res.json({
     totalUsers: users.rows[0].n,
