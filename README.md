@@ -7,7 +7,7 @@ Lëk is a machine-learning early warning system that predicts food price inflati
 - Dashboard: https://lek-dashboard.onrender.com
 - Backend API: https://lek-backend.onrender.com
 - ML service API docs: https://lek-ml-service.onrender.com/docs
-- Demo video: (link to be added)
+- Demo video: https://drive.google.com/file/d/1HTU4Tg78og37Z3i6tSdGC0Q9CBSlXnxa/view?usp=sharing
 
 All services run on Render's free tier. A service that has been idle spins down, so the first request after a period of inactivity can take up to about 50 seconds to respond while it wakes up. Subsequent requests are fast.
 
