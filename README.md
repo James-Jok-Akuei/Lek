@@ -229,3 +229,135 @@ lek/
 ├── scripts/run-local.sh   starts all three services locally
 └── docker-compose.yml
 ```
+
+## Analysis
+
+This section compares what the system set out to achieve, as defined in the
+project proposal, against what was actually built and measured.
+
+### Objective 1 — Data preparation
+
+Met. Seven public datasets were collected and joined into a single monthly
+table covering January 2007 to May 2026 across 39 South Sudanese markets:
+World Bank Real-Time Food Prices (food prices), World Bank Real-Time Exchange
+Rates (official and parallel rates), US EIA oil production, UCDP Georeferenced
+Event Dataset (conflict events), the World Bank national Consumer Price Index,
+and two hand-built tables (an oil-pipeline status timeline and a seasonal
+calendar). The merged dataset met the proposal's target of under 5 percent
+missing values in the key columns.
+
+### Objective 2 — Model comparison
+
+Met. Five models were compared: Linear Regression, ARIMA, Random Forest,
+XGBoost, and LSTM. The prediction target was framed as the month-over-month
+change in the food price index rather than the absolute price level, so that
+the target does not drift outside the training range over time. XGBoost was
+selected as the deployed model on this target (model version
+`v2_xgboost_change_20260618`). On the change target, the deployed XGBoost model
+reaches R-squared of 0.865 and MAPE of 2.22 percent, exceeding the proposal's
+selection criteria of R-squared at or above 0.75 and MAPE at or below 15
+percent.
+
+### Objective 3 — Build, deploy, and test
+
+Partially met. The complete system was built and deployed: a Python FastAPI ML
+service, a Node.js/Express backend, a PostgreSQL database, a React dashboard,
+and Africa's Talking SMS and USSD integration, all running live on Render. USSD
+was confirmed working end to end against the live deployment, and the dashboard
+loads prediction and alert data from the live backend. The formal pilot
+described in the proposal — 20 South Sudanese testers in Kigali, with measured
+SMS delivery times — was not carried out within this iteration. SMS sending is
+functional and demonstrable through the alert test endpoint, but delivery
+latency and structured tester feedback were not formally measured.
+
+### Mapping to the research questions
+
+RQ1 (can a model predict food price inflation four weeks ahead?) is answered in
+the affirmative for the national month-over-month change, within the accuracy
+limits above. RQ2 (which model performs best?) resulted in the selection of
+XGBoost on the change target, with the metrics reported under Objective 2. RQ3
+(can predictions be delivered on basic phones?) is answered in the affirmative
+for USSD, which was verified live, and SMS, which is functional.
+
+### Scope of the prediction
+
+The deployed model produces a single national month-over-month forecast (most
+recent: +3.88 percent). The dashboard presents a per-state view across South
+Sudan's ten states, but those state values are derived from the single national
+figure and are flagged as derived in the API; they are not independent
+per-state models. This is a deliberate scoping decision given the density of
+the available data, stated here so the system is not mistaken for a per-state
+forecaster.
+
+### Requirements status
+
+| ID  | Requirement                         | Status        |
+|-----|-------------------------------------|---------------|
+| FR1 | Predict food price spikes           | Met           |
+| FR2 | Send SMS warnings                   | Functional; auto-trigger inactive (see Discussion) |
+| FR3 | Respond to USSD requests            | Met (verified live) |
+| FR4 | Register and manage users           | Met           |
+| FR5 | Display predictions and alert history | Met         |
+| FR6 | Allow manual model updates          | Offline process; no dashboard UI |
+| FR7 | Log all activity                    | Partial (USSD dials and some errors not logged) |
+
+| ID   | Requirement      | Status                          |
+|------|------------------|---------------------------------|
+| NFR1 | Performance (<5s) | Not formally measured          |
+| NFR2 | Accuracy targets | Met (R-squared 0.865, MAPE 2.22%) |
+| NFR3 | Reliability/uptime | Not formally measured        |
+| NFR4 | Scalability      | Not formally measured          |
+| NFR5 | Security         | Met (env-based admin password) |
+| NFR6 | SMS length (<=160) | Met                          |
+| NFR7 | Maintainability  | Met (modular structure, Git)   |
+
+## Discussion
+
+The deployment demonstrates that the end-to-end path the proposal set out — from
+a trained model, through a backend, out to a basic phone over USSD — functions
+on real infrastructure. For the intended users, who mostly rely on basic phones
+with no reliable internet, this delivery path is as important as the model
+itself.
+
+Framing the prediction target as month-over-month change rather than the
+absolute price level was a deliberate modelling choice. On a strongly-trending,
+hyperinflationary series, predicting the level directly is fragile, because the
+values to be predicted keep moving beyond the range seen in training. Predicting
+the change keeps the target in a stable range and makes the forecast more robust
+in production.
+
+One honest gap deserves emphasis. The system is designed to send an automatic
+SMS warning when a predicted spike crosses an alert threshold. Under current
+conditions the national forecast (+3.88 percent) sits below that threshold, so
+the automatic alert does not fire. The SMS capability is real and can be
+demonstrated through the test endpoint, but in normal operation the warning
+pipeline is currently dormant. This reflects a wider point: a working forecast
+and an actionable alert are not the same thing, and the alerting logic needs as
+much attention as the model.
+
+## Recommendations
+
+For future work on this system:
+
+- Make the alert threshold adaptive or relative, rather than a single fixed
+  percentage, so that meaningful changes trigger warnings instead of only
+  extreme national spikes.
+- Move toward genuine per-state forecasts once sufficient market-level data
+  density is available, replacing the current derived per-state values.
+- Run the formal pilot from the proposal: registered testers, measured SMS
+  delivery times, and structured feedback on message clarity. This would close
+  the open items under Objective 3 and NFR1.
+- Complete the logging coverage (FR7) by recording USSD dials and errors, and
+  add a dashboard interface for model retraining (FR6) so updates do not depend
+  on a manual offline process.
+- Measure the unverified non-functional targets (timing, uptime, scalability)
+  under realistic load.
+- Plan for the data lifecycle: the underlying World Bank price feed updates on
+  its own schedule, and the live database on the free hosting tier has a
+  limited lifespan, so a re-seeding and retraining routine should be
+  established.
+
+For others building early-warning tools in similar settings: choose a
+prediction target the model can actually represent before optimising for
+accuracy, verify the delivery channel on the real devices your users own, and
+report findings that contradict your hypothesis as results in their own right.
