@@ -1,0 +1,42 @@
+# Runs both automated test suites on every push and pull request:
+#   - backend  -> Jest (DB and SMS mocked; no services needed)
+#   - ml-service -> pytest (loads the real committed model artifact)
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    name: backend (Jest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lek/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: lek/backend/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  ml-service:
+    name: ml-service (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lek/ml-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: lek/ml-service/requirements-serve.txt
+      # Serve deps (same set the deployed service uses) + the test runner.
+      - run: pip install -r requirements-serve.txt pytest httpx
+      - run: python -m pytest

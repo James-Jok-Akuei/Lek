@@ -139,6 +139,22 @@ Full step-by-step instructions, including database initialization, environment v
 
 ## Testing
 
+### Automated tests
+
+The backend is tested with **Jest** (plus Supertest for HTTP-level route tests) and the ML service with **pytest** (plus FastAPI's TestClient). The backend tests mock the database and SMS provider, so they run with no services up; the ML tests exercise the real deployed model artifact, so they also catch a broken or missing `model.pkl`.
+
+```bash
+# Backend (30 tests): auth middleware, alert-engine thresholds, SMS service,
+# login route, JWT protection, counties + health endpoints.
+cd lek/backend && npm test
+
+# ML service (19 tests): model loading, prediction sanity and reconstruction,
+# derived per-county flags, /health, /predict validation, /predict/all, /model/info.
+cd lek/ml-service && ./.venv/bin/python -m pytest
+```
+
+### Manual test evidence
+
 Screenshots of the tested flows live in `lek/docs/screenshots/`.
 
 ### USSD flow (simulator)

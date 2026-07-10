@@ -11,3 +11,7 @@ tensorflow
 pandas
 numpy
 joblib
+
+# --- testing ---
+pytest
+httpx
