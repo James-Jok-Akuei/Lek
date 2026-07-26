@@ -39,6 +39,7 @@ app.get('/api/health', async (_req, res) => {
 // --- everything below requires a valid admin JWT ---
 app.use('/api', requireAuth);
 app.use('/api', require('./routes/forecast'));        // /api/model, /api/forecast (compat)
+app.use('/api', require('./routes/modelPerformance')); // /api/model-versions, /api/model-performance
 app.use('/api/counties', require('./routes/counties'));
 app.use('/api/predictions', require('./routes/predictions'));
 app.use('/api/users', require('./routes/users'));

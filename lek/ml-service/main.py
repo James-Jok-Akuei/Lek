@@ -10,6 +10,8 @@ Endpoints:
   POST /predict     -> {county?: str} national or per-county next-month forecast
   GET  /predict/all -> forecast for all 10 states (per-county figures derived)
   GET  /model/info  -> deployed-model metadata (version, metrics, caveat)
+  GET  /model/performance -> offline evaluation detail: feature importances +
+                             held-out backtest series (read-only, no database)
 """
 from __future__ import annotations
 
@@ -101,6 +103,31 @@ def model_info() -> dict:
     if not md:
         raise HTTPException(status_code=503, detail="model metadata unavailable")
     return md
+
+
+@app.get("/model/performance", tags=["meta"])
+def model_performance() -> dict:
+    """Offline evaluation detail for the deployed model: feature importances read
+    from model.pkl and the held-out backtest series from backtest.json.
+
+    Read-only over local artifacts — this service has no database access. Any piece
+    that is genuinely unavailable is returned as null rather than substituted.
+    """
+    md = predictor.metadata()
+    if not md:
+        raise HTTPException(status_code=503, detail="model metadata unavailable")
+    return {
+        "version_name": predictor.model_version(),
+        "model_type": predictor.model_type(),
+        "trained_at": md.get("trained_at"),
+        "training_data_range": md.get("training_data_range"),
+        "metrics": {"rmse": md.get("rmse"), "mape": md.get("mape"),
+                    "r2_score": md.get("r2_score")},
+        "evaluation_note": ("All figures are offline backtest results on held-out data. "
+                            "They do not measure the accuracy of live predictions."),
+        "feature_importances": predictor.feature_importances(),
+        "backtest": predictor.backtest(),
+    }
 
 
 @app.get("/", tags=["meta"])

@@ -4,6 +4,7 @@ import Footer from './components/Footer'
 import Login from './pages/Login'
 import Overview from './pages/Overview'
 import Predictions from './pages/Predictions'
+import ModelPerformance from './pages/ModelPerformance'
 import Users from './pages/Users'
 import Alerts from './pages/Alerts'
 import Admins from './pages/Admins'
@@ -49,6 +50,7 @@ export default function App() {
           >
             <Route index element={<Overview />} />
             <Route path="predictions" element={<Predictions />} />
+            <Route path="model-performance" element={<ModelPerformance />} />
             <Route path="users" element={<Users />} />
             <Route path="alerts" element={<Alerts />} />
             <Route

@@ -1,0 +1,103 @@
+{
+  "version_name": "v2_xgboost_change_20260618",
+  "evaluation": "offline backtest on held-out data \u2014 NOT live prediction accuracy",
+  "split_date": "2025-01-01",
+  "training_range": {
+    "start_date": "2008-01-01",
+    "end_date": "2024-12-01"
+  },
+  "unit": "food price index (level, reconstructed from the predicted log-change)",
+  "n_points": 16,
+  "period": {
+    "start": "2025-02-01",
+    "end": "2026-05-01"
+  },
+  "metrics": {
+    "rmse": 1.271603,
+    "mape": 2.221916,
+    "r2_score": 0.865006
+  },
+  "generated_by": "build_backtest.py (deployed model.pkl replayed over the held-out split)",
+  "series": [
+    {
+      "target_month": "2025-02-01",
+      "actual": 33.8813,
+      "predicted": 32.9404
+    },
+    {
+      "target_month": "2025-03-01",
+      "actual": 36.695,
+      "predicted": 35.5429
+    },
+    {
+      "target_month": "2025-04-01",
+      "actual": 38.2525,
+      "predicted": 38.4946
+    },
+    {
+      "target_month": "2025-05-01",
+      "actual": 39.028,
+      "predicted": 40.1285
+    },
+    {
+      "target_month": "2025-06-01",
+      "actual": 40.986,
+      "predicted": 40.942
+    },
+    {
+      "target_month": "2025-07-01",
+      "actual": 42.4265,
+      "predicted": 42.866
+    },
+    {
+      "target_month": "2025-08-01",
+      "actual": 42.6433,
+      "predicted": 42.5807
+    },
+    {
+      "target_month": "2025-09-01",
+      "actual": 42.4243,
+      "predicted": 43.0056
+    },
+    {
+      "target_month": "2025-10-01",
+      "actual": 42.9505,
+      "predicted": 44.0875
+    },
+    {
+      "target_month": "2025-11-01",
+      "actual": 42.1623,
+      "predicted": 44.6344
+    },
+    {
+      "target_month": "2025-12-01",
+      "actual": 40.4573,
+      "predicted": 43.8152
+    },
+    {
+      "target_month": "2026-01-01",
+      "actual": 41.9793,
+      "predicted": 42.2235
+    },
+    {
+      "target_month": "2026-02-01",
+      "actual": 42.224,
+      "predicted": 43.6221
+    },
+    {
+      "target_month": "2026-03-01",
+      "actual": 44.0637,
+      "predicted": 43.8605
+    },
+    {
+      "target_month": "2026-04-01",
+      "actual": 46.8152,
+      "predicted": 45.7598
+    },
+    {
+      "target_month": "2026-05-01",
+      "actual": 48.6793,
+      "predicted": 48.6297
+    }
+  ]
+}

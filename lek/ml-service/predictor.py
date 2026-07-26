@@ -36,6 +36,9 @@ class _Artifacts:
     def __init__(self) -> None:
         self.loaded = False
         self.error: str | None = None
+        # Optional artifact (built offline by build_backtest.py). Absent is not an
+        # error — the API reports it as null and the dashboard shows an empty state.
+        self.backtest: dict | None = None
         try:
             self.bundle = joblib.load(MODELS / "model.pkl")
             self.spec = json.loads((MODELS / "feature_spec.json").read_text())
@@ -55,6 +58,20 @@ class _Artifacts:
             self.model_version = self.bundle.get("version_name", "unknown")
             self.model_type = self.bundle.get("model_type", "unknown")
             self.loaded = True
+
+            # Backtest series is optional and must never break model loading.
+            bt_path = MODELS / "backtest.json"
+            if bt_path.exists():
+                try:
+                    bt = json.loads(bt_path.read_text())
+                    # Only serve it if it belongs to the model actually deployed.
+                    if bt.get("version_name") == self.model_version:
+                        self.backtest = bt
+                    else:
+                        print(f"[predictor] ignoring backtest.json: built for "
+                              f"{bt.get('version_name')}, deployed is {self.model_version}")
+                except Exception as exc:
+                    print(f"[predictor] could not read backtest.json: {exc}")
         except Exception as exc:  # surfaced via is_loaded()/load_error()
             self.error = f"{type(exc).__name__}: {exc}"
 
@@ -82,6 +99,28 @@ def model_type() -> str | None:
 
 def metadata() -> dict:
     return _ART.metadata if _ART.loaded else {}
+
+
+def feature_importances() -> list[dict] | None:
+    """Real gain-based importances read straight off the deployed model, sorted
+    high to low. None if the model isn't loaded or exposes no importances."""
+    if not _ART.loaded:
+        return None
+    values = getattr(_ART.model, "feature_importances_", None)
+    if values is None or len(values) != len(_ART.features):
+        return None
+    pairs = sorted(zip(_ART.features, (float(v) for v in values)),
+                   key=lambda kv: kv[1], reverse=True)
+    # feature_spec.json carries a plain-English description of each feature.
+    described = {f["name"]: f.get("computation") for f in _ART.spec.get("features", [])}
+    return [{"feature": name, "importance": round(val, 6),
+             "description": described.get(name)}
+            for name, val in pairs]
+
+
+def backtest() -> dict | None:
+    """Held-out predicted-vs-actual series, or None if the artifact isn't present."""
+    return _ART.backtest if _ART.loaded else None
 
 
 # ------------------------------------------------------------------ prediction

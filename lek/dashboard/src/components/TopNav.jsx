@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutGrid, TrendingUp, Users, Bell, ShieldCheck, LogOut } from 'lucide-react'
+import { LayoutGrid, TrendingUp, Gauge, Users, Bell, ShieldCheck, LogOut } from 'lucide-react'
 import Logo from './Logo'
 import { logout, getCurrentAdmin } from '../api'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutGrid, end: true },
   { to: '/dashboard/predictions', label: 'Predictions', icon: TrendingUp },
+  { to: '/dashboard/model-performance', label: 'Model', icon: Gauge },
   { to: '/dashboard/users', label: 'Users', icon: Users },
   { to: '/dashboard/alerts', label: 'Alerts', icon: Bell },
   // Admin management is superadmin-only (nav hidden for regular admins; the
@@ -21,7 +22,7 @@ function NavItem({ item }) {
       to={item.to}
       end={item.end}
       className={({ isActive }) =>
-        `relative flex items-center gap-2 py-1.5 text-sm transition-colors ${
+        `relative flex shrink-0 items-center gap-2 whitespace-nowrap py-1.5 text-sm transition-colors ${
           isActive ? 'font-semibold text-forest' : 'font-medium text-muted hover:text-ink'
         }`
       }
@@ -52,11 +53,13 @@ export default function TopNav() {
   }
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-surface">
-      <div className="mx-auto flex h-18 w-full max-w-7xl items-center px-6 lg:px-8">
-        <Logo className="text-3xl" />
+      {/* gap-8 guarantees breathing room between the wordmark and the nav once
+          ml-auto has no slack left — at medium widths they used to touch. */}
+      <div className="mx-auto flex h-18 w-full max-w-400 items-center gap-8 px-6 lg:gap-12 lg:px-10">
+        <Logo className="shrink-0 text-3xl" />
 
-        <div className="ml-auto flex items-center gap-7">
-          <nav className="hidden items-center gap-7 md:flex">
+        <div className="ml-auto flex items-center gap-5 lg:gap-7">
+          <nav className="hidden items-center gap-5 md:flex lg:gap-7">
             {items.map((item) => (
               <NavItem key={item.to} item={item} />
             ))}

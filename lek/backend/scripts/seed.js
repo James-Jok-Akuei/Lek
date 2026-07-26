@@ -12,8 +12,14 @@ function generateStrongPassword() {
   return crypto.randomBytes(16).toString('base64url');
 }
 
-// A few subscribers per county (phone, county name, language).
-const SUBSCRIBERS = [
+// --- demo subscribers -------------------------------------------------------
+// These are SYNTHETIC pilot records, not real people. Phone numbers run in a
+// reserved +211921000NNN block that no real subscriber uses, so they can never
+// collide with a genuine registration.
+
+// The original roster, kept verbatim: these rows already exist in deployed
+// databases and must keep their county/language assignments.
+const BASE_SUBSCRIBERS = [
   ['+211921000001', 'Central Equatoria', 'en'],
   ['+211921000002', 'Central Equatoria', 'ar'],
   ['+211921000003', 'Jonglei', 'en'],
@@ -27,6 +33,45 @@ const SUBSCRIBERS = [
   ['+211921000011', 'Western Bahr el Ghazal', 'en'],
   ['+211921000012', 'Jonglei', 'en'],
 ];
+
+// Target size of the demo roster, and roughly how it splits across the states —
+// weighted (not uniform) so the per-county figures don't look machine-generated.
+// The weights must sum to TOTAL_SUBSCRIBERS.
+const TOTAL_SUBSCRIBERS = 50;
+const COUNTY_TARGETS = [
+  ['Central Equatoria', 8],        // Juba — the largest urban population
+  ['Jonglei', 6],
+  ['Unity', 5],
+  ['Upper Nile', 5],
+  ['Warrap', 5],
+  ['Eastern Equatoria', 5],
+  ['Lakes', 4],
+  ['Western Equatoria', 4],
+  ['Northern Bahr el Ghazal', 4],
+  ['Western Bahr el Ghazal', 4],
+];
+
+// Deterministic: the same roster every run, so re-seeding never churns rows.
+function buildSubscribers() {
+  const list = [...BASE_SUBSCRIBERS];
+  const perCounty = {};
+  for (const [, county] of BASE_SUBSCRIBERS) {
+    perCounty[county] = (perCounty[county] || 0) + 1;
+  }
+
+  let n = BASE_SUBSCRIBERS.length;
+  for (const [county, target] of COUNTY_TARGETS) {
+    for (let have = perCounty[county] || 0; have < target; have += 1) {
+      if (list.length >= TOTAL_SUBSCRIBERS) break;
+      n += 1;
+      // Every 5th subscriber prefers Arabic — the rest English.
+      list.push([`+211921${String(n).padStart(6, '0')}`, county, n % 5 === 0 ? 'ar' : 'en']);
+    }
+  }
+  return list;
+}
+
+const SUBSCRIBERS = buildSubscribers();
 
 async function main() {
   // --- admin ---

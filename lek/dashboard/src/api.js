@@ -82,6 +82,11 @@ export const sendTestAlert = (body) =>
   req('/alerts/test', { method: 'POST', body: JSON.stringify(body) })
 export const runScheduler = () => req('/scheduler/run-now', { method: 'POST' })
 
+// --- model performance ---
+export const getModelVersions = () => req('/model-versions')
+export const getModelPerformance = () => req('/model-performance')
+export const getPredictionActivity = () => req('/predictions/activity')
+
 // --- admin account management ---
 export const getAdmins = () => req('/admins')
 export const createAdmin = (body) =>
@@ -119,6 +124,35 @@ export async function getNationalForecast() {
     currentIndex: f.current_index,
     forecastIndex: f.forecast_index,
     changePercent: f.predicted_change_pct,
+  }
+}
+
+// Everything the Model Performance page needs, in one parallel load. Each source
+// is allowed to fail independently — a missing backtest or an unreachable
+// ml-service must not blank out the version comparison. The failure REASON is
+// kept alongside the null so the page can state what actually went wrong instead
+// of guessing at a cause.
+async function settle(promise) {
+  try {
+    return { value: await promise, error: null }
+  } catch (err) {
+    return { value: null, error: err?.message || 'request failed' }
+  }
+}
+
+export async function loadModelPerformance() {
+  const [versions, performance, activity] = await Promise.all([
+    settle(getModelVersions()),
+    settle(getModelPerformance()),
+    settle(getPredictionActivity()),
+  ])
+  return {
+    versions: versions.value,
+    versionsError: versions.error,
+    performance: performance.value,
+    performanceError: performance.error,
+    activity: activity.value,
+    activityError: activity.error,
   }
 }
 

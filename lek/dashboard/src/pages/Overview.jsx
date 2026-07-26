@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Info } from 'lucide-react'
 import { StatusBadge } from '../components/Badge'
 import { useAsync, loadOverview } from '../api'
 
@@ -87,13 +87,59 @@ function EstimateTag() {
   )
 }
 
+// One consolidated caveat for the forecasts panel. This replaces the "State
+// estimates" pill AND the loose sentence that used to sit under the tabs: they
+// said the same thing twice, so neither read as important. A recessed callout
+// with a lead line is noticeable without competing with the county cards.
+function StateEstimateNote() {
+  return (
+    <div className="mt-4 flex items-start gap-3 rounded-2xl bg-canvas px-4 py-3.5">
+      <Info size={16} strokeWidth={2} className="mt-0.5 shrink-0 text-muted" />
+      <div>
+        <p className="text-[13px] font-semibold leading-snug text-ink">
+          Estimates — not per-state forecasts
+        </p>
+        <p className="mt-1 text-[13px] leading-relaxed text-muted">
+          Every state below shows the same national figure. Per-state models are planned
+          for future work.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // --- Forecasts (tabs + carousel) -------------------------------------------
 const PAGE = 2
 const RISK_LABEL = { high: 'High risk', medium: 'Watch', low: 'Stable' }
 const RISK_DOT = { high: 'bg-bad', medium: 'bg-warn', low: 'bg-good' }
 const RISK_TEXT = { high: 'text-bad', medium: 'text-warn', low: 'text-good' }
 
-function ForecastsPanel({ counties, highRiskCounties }) {
+// System metadata, deliberately subordinate to the county list above it: which
+// model produced these forecasts and how it scored in OFFLINE backtesting. The
+// "(backtest)" marker matters — these figures do not score the live forecasts.
+function ActiveModelStrip({ modelInfo }) {
+  if (!modelInfo?.versionName) return null
+  const hasMetrics = modelInfo.r2 && modelInfo.mape
+  return (
+    <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-3 text-[11px] text-faint">
+      <span className="text-muted">Active model</span>
+      <span className="font-medium text-ink-soft">{modelInfo.versionName}</span>
+      {hasMetrics && (
+        <span className="tnum">
+          · R² {modelInfo.r2} · MAPE {modelInfo.mape}% <span className="text-faint">(backtest)</span>
+        </span>
+      )}
+      <Link
+        to="/dashboard/model-performance"
+        className="ml-auto font-medium text-muted underline-offset-2 hover:text-forest hover:underline"
+      >
+        View model performance →
+      </Link>
+    </div>
+  )
+}
+
+function ForecastsPanel({ counties, highRiskCounties, modelInfo }) {
   const [tab, setTab] = useState('risk')
   const [page, setPage] = useState(0)
 
@@ -129,14 +175,18 @@ function ForecastsPanel({ counties, highRiskCounties }) {
             </button>
           ))}
         </div>
-        <EstimateTag />
       </div>
 
-      <p className="mt-4 text-[13px] text-muted">
-        All states currently reflect the national forecast; per-state models are planned for
-        future work.
-      </p>
+      <StateEstimateNote />
 
+      {shown.length === 0 ? (
+        <div className="mt-4 rounded-2xl border border-dashed border-line-strong px-5 py-9 text-center">
+          <p className="text-sm font-medium text-ink-soft">No states are flagged at risk</p>
+          <p className="mt-1 text-[13px] text-muted">
+            The latest forecast puts every state below the 10% high-risk threshold.
+          </p>
+        </div>
+      ) : (
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {shown.map((c) => (
           <div key={c.id} className="rounded-2xl border border-line p-4">
@@ -154,41 +204,49 @@ function ForecastsPanel({ counties, highRiskCounties }) {
           </div>
         ))}
       </div>
+      )}
 
-      <div className="mt-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={safePage === 0}
-            className="grid h-8 w-8 place-items-center rounded-full border border-line-strong text-ink-soft transition hover:bg-canvas disabled:opacity-30"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            onClick={() => setPage((p) => Math.min(pages - 1, p + 1))}
-            disabled={safePage >= pages - 1}
-            className="grid h-8 w-8 place-items-center rounded-full border border-line-strong text-ink-soft transition hover:bg-canvas disabled:opacity-30"
-          >
-            <ChevronRight size={16} />
-          </button>
-          <div className="ml-2 flex items-center gap-1.5">
-            {Array.from({ length: pages }).map((_, i) => (
-              <span
-                key={i}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === safePage ? 'w-5 bg-forest' : 'w-1.5 bg-line-strong'
-                }`}
-              />
-            ))}
+      <div className="mt-6 flex items-center">
+        {/* Only worth showing when there is somewhere to go — a single page left
+            two dead arrows and a lone dot on screen. */}
+        {pages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={safePage === 0}
+              className="grid h-8 w-8 place-items-center rounded-full border border-line-strong text-ink-soft transition hover:bg-canvas disabled:opacity-30"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(pages - 1, p + 1))}
+              disabled={safePage >= pages - 1}
+              className="grid h-8 w-8 place-items-center rounded-full border border-line-strong text-ink-soft transition hover:bg-canvas disabled:opacity-30"
+            >
+              <ChevronRight size={16} />
+            </button>
+            <div className="ml-2 flex items-center gap-1.5">
+              {Array.from({ length: pages }).map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === safePage ? 'w-5 bg-forest' : 'w-1.5 bg-line-strong'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
         <Link
           to="/dashboard/predictions"
-          className="text-sm font-medium text-forest hover:underline"
+          className="ml-auto text-sm font-medium text-forest hover:underline"
         >
           View All
         </Link>
       </div>
+
+      {/* Only under "At Risk", where the model behind these flags is relevant. */}
+      {tab === 'risk' && <ActiveModelStrip modelInfo={modelInfo} />}
     </section>
   )
 }
@@ -305,7 +363,11 @@ export default function Overview() {
       <ForecastBanner modelInfo={modelInfo} nationalForecast={nationalForecast} />
       <StatTiles stats={stats} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <ForecastsPanel counties={counties} highRiskCounties={highRiskCounties} />
+        <ForecastsPanel
+          counties={counties}
+          highRiskCounties={highRiskCounties}
+          modelInfo={modelInfo}
+        />
         <PerformancePanel counties={counties} />
       </div>
       <RecentAlerts alerts={alerts} />

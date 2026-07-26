@@ -53,4 +53,10 @@ async function modelInfo() {
   return call('/model/info');
 }
 
-module.exports = { health, predict, predictAll, modelInfo };
+// GET /model/performance — offline evaluation detail (feature importances +
+// held-out backtest series). Fields the service cannot supply come back null.
+async function modelPerformance() {
+  return call('/model/performance');
+}
+
+module.exports = { health, predict, predictAll, modelInfo, modelPerformance };
