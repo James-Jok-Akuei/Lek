@@ -81,6 +81,9 @@ export const deleteUser = (id) => req(`/users/${id}`, { method: 'DELETE' })
 export const sendTestAlert = (body) =>
   req('/alerts/test', { method: 'POST', body: JSON.stringify(body) })
 export const runScheduler = () => req('/scheduler/run-now', { method: 'POST' })
+// Stores a fresh prediction per state (and a model_versions row on first run).
+// Unlike the scheduler job, this does NOT dispatch any SMS.
+export const runPredictions = () => req('/predictions/run', { method: 'POST' })
 
 // --- model performance ---
 export const getModelVersions = () => req('/model-versions')

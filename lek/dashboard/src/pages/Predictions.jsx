@@ -1,9 +1,20 @@
 import { useState } from 'react'
-import { ChevronsUpDown } from 'lucide-react'
+import { ChevronsUpDown, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react'
 import { RiskBadge } from '../components/Badge'
-import { useAsync, getCounties, getNationalForecast } from '../api'
+import { useAsync, getCounties, getNationalForecast, runPredictions } from '../api'
 
 const RISK_ORDER = { high: 3, medium: 2, low: 1 }
+
+// "2026-05-01" -> "May 2026". Built from the string parts because passing a
+// date-only string to new Date() reads it as UTC and can slip a month backwards
+// west of Greenwich.
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December']
+function monthLabel(iso) {
+  if (typeof iso !== 'string') return ''
+  const [y, m] = iso.split('-')
+  return MONTHS[Number(m) - 1] ? `${MONTHS[Number(m) - 1]} ${y}` : iso
+}
 
 // Risk thresholds — Low below 5%, Medium 5–15%, High above 15%.
 function riskFromPct(pct) {
@@ -55,7 +66,31 @@ function NationalForecastCard({ national }) {
 export default function Predictions() {
   // Sort by risk level; toggle high→low / low→high.
   const [sortDesc, setSortDesc] = useState(true)
-  const { data, loading, error } = useAsync(loadPredictions)
+  const [tick, setTick] = useState(0)
+  const [running, setRunning] = useState(false)
+  const [runResult, setRunResult] = useState(null)
+  const [runError, setRunError] = useState('')
+  const { data, loading, error } = useAsync(loadPredictions, [tick])
+
+  // Ask the backend for a fresh forecast and store it. This is what first
+  // populates model_versions and predictions in an empty database — no SMS is
+  // sent (that is the alert engine's job).
+  async function handleRun() {
+    setRunning(true)
+    setRunError('')
+    setRunResult(null)
+    try {
+      const res = await runPredictions()
+      // Stamp the time so a repeat click visibly registers even though the
+      // forecast itself never changes between runs.
+      setRunResult({ ...res, at: new Date() })
+      setTick((t) => t + 1) // reload the table with the new figures
+    } catch (e) {
+      setRunError(e.message || 'Prediction run failed')
+    } finally {
+      setRunning(false)
+    }
+  }
 
   if (loading) return <p className="py-20 text-center text-muted">Loading predictions…</p>
   if (error) return <p className="py-20 text-center text-bad">Could not load predictions.</p>
@@ -68,14 +103,53 @@ export default function Predictions() {
 
   return (
     <div className="flex h-[calc(100vh-130px)] flex-col space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">Predictions</h1>
-        <p className="mt-1 text-sm text-muted">
-          The trained model forecasts the{' '}
-          <span className="font-medium text-ink-soft">national</span> food price index one
-          month ahead.
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Predictions</h1>
+          <p className="mt-1 text-sm text-muted">
+            The trained model forecasts the{' '}
+            <span className="font-medium text-ink-soft">national</span> food price index one
+            month ahead.
+          </p>
+        </div>
+        <button
+          onClick={handleRun}
+          disabled={running}
+          title="Fetch a fresh forecast from the model and store it. No SMS is sent."
+          className="inline-flex shrink-0 items-center gap-2 self-start rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-forest-hover disabled:opacity-60"
+        >
+          <RefreshCw size={16} strokeWidth={2} className={running ? 'animate-spin' : ''} />
+          {running ? 'Running…' : 'Run predictions'}
+        </button>
       </header>
+
+      {/* Always report the outcome — a run that silently changes nothing on
+          screen is indistinguishable from a broken button. The timestamp is what
+          makes a repeat click legible: the figures below will not move, because
+          the same model on the same data returns the same forecast. */}
+      {runResult && (
+        <div className="flex items-start gap-3 rounded-2xl bg-mint px-4 py-3.5">
+          <CheckCircle2 size={17} strokeWidth={2} className="mt-0.5 shrink-0 text-mint-ink" />
+          <div className="text-[13px] leading-relaxed">
+            <p className="font-semibold text-mint-ink">
+              Forecast updated at{' '}
+              {runResult.at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              {' '}— {runResult.predictions_created} states stored for{' '}
+              {monthLabel(runResult.target_month)}
+            </p>
+            <p className="mt-0.5 text-ink-soft">
+              Model {runResult.model_version}. The figures below are unchanged: the same
+              model on the same input data returns the same forecast every run.
+            </p>
+          </div>
+        </div>
+      )}
+      {runError && (
+        <div className="flex items-start gap-3 rounded-2xl bg-canvas px-4 py-3.5">
+          <AlertCircle size={17} strokeWidth={2} className="mt-0.5 shrink-0 text-bad" />
+          <p className="text-[13px] leading-relaxed text-bad">{runError}</p>
+        </div>
+      )}
 
       <NationalForecastCard national={national} />
 
