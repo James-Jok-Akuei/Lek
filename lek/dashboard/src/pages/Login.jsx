@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { login } from '../api'
 
@@ -27,7 +27,7 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-canvas px-4 py-12">
+    <div className="flex flex-1 flex-col items-center justify-center bg-canvas px-4 py-12">
       {/* Wordmark */}
       <div className="mb-10 text-center leading-none tracking-tight">
         <span className="text-6xl font-bold text-ink">Lëk</span>
@@ -82,8 +82,13 @@ export default function Login() {
 
           <p className="text-[13px] leading-relaxed text-muted">
             By signing in, you agree to Lëk&apos;s{' '}
-            <span className="font-semibold text-terra">Terms of Use</span> &amp;{' '}
-            <span className="font-semibold text-terra">Privacy Policy</span>
+            <Link to="/terms" className="font-semibold text-terra hover:underline">
+              Terms of Use
+            </Link>{' '}
+            &amp;{' '}
+            <Link to="/privacy" className="font-semibold text-terra hover:underline">
+              Privacy Policy
+            </Link>
           </p>
 
           <button

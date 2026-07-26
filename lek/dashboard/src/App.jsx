@@ -1,11 +1,14 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import DashboardLayout from './components/DashboardLayout'
+import Footer from './components/Footer'
 import Login from './pages/Login'
 import Overview from './pages/Overview'
 import Predictions from './pages/Predictions'
 import Users from './pages/Users'
 import Alerts from './pages/Alerts'
 import Admins from './pages/Admins'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsOfUse from './pages/TermsOfUse'
 import { isAuthed, getCurrentAdmin } from './api'
 
 // Redirect to the login screen if there is no valid session token.
@@ -23,34 +26,46 @@ function RequireSuperadmin({ children }) {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="/login" element={<Login />} />
+    // App shell: a full-height flex column so the footer sits at the bottom of
+    // short pages without ever overlapping content (no position: fixed).
+    <div className="flex min-h-screen flex-col bg-canvas">
+      <div className="flex flex-1 flex-col">
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
 
-      {/* All authenticated pages share the dashboard layout. */}
-      <Route
-        path="/dashboard"
-        element={
-          <RequireAuth>
-            <DashboardLayout />
-          </RequireAuth>
-        }
-      >
-        <Route index element={<Overview />} />
-        <Route path="predictions" element={<Predictions />} />
-        <Route path="users" element={<Users />} />
-        <Route path="alerts" element={<Alerts />} />
-        <Route
-          path="admins"
-          element={
-            <RequireSuperadmin>
-              <Admins />
-            </RequireSuperadmin>
-          }
-        />
-      </Route>
+          {/* Public — must stay outside RequireAuth so they are readable logged out. */}
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfUse />} />
 
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+          {/* All authenticated pages share the dashboard layout. */}
+          <Route
+            path="/dashboard"
+            element={
+              <RequireAuth>
+                <DashboardLayout />
+              </RequireAuth>
+            }
+          >
+            <Route index element={<Overview />} />
+            <Route path="predictions" element={<Predictions />} />
+            <Route path="users" element={<Users />} />
+            <Route path="alerts" element={<Alerts />} />
+            <Route
+              path="admins"
+              element={
+                <RequireSuperadmin>
+                  <Admins />
+                </RequireSuperadmin>
+              }
+            />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </div>
+
+      <Footer />
+    </div>
   )
 }
