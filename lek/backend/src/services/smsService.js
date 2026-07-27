@@ -7,8 +7,26 @@
 const config = require('../config');
 const { query } = require('../db/pool');
 
-const MAX_LEN = 160; // proposal NFR6: SMS must stay within one 160-char segment
+// proposal NFR6: an alert must stay within ONE SMS segment. How many characters
+// that is depends on the alphabet: GSM-7 fits 160, but any non-GSM character
+// (Arabic script, for instance) forces the whole message to UCS-2, where a
+// segment is only 70. Clamping Arabic at 160 would truncate mid-word or silently
+// bill three segments, so the limit is chosen per message.
+const MAX_LEN = 160;         // GSM-7
+const MAX_LEN_UNICODE = 70;  // UCS-2
 const SIMULATED = !config.africasTalking.apiKey;
+
+// Conservative test: treat any non-ASCII character as forcing UCS-2. A few
+// non-ASCII characters (é, £) are GSM-7, so this can pick the shorter limit
+// unnecessarily — that errs towards a message that fits, never one that is cut.
+function isUnicodeMessage(text) {
+  return /[^\x00-\x7F]/.test(text);
+}
+
+// The single-segment limit that applies to this message.
+function segmentLimit(text) {
+  return isUnicodeMessage(text) ? MAX_LEN_UNICODE : MAX_LEN;
+}
 
 let smsClient = null;
 if (!SIMULATED) {
@@ -21,7 +39,8 @@ if (!SIMULATED) {
 
 function clamp(message) {
   const m = String(message || '').trim();
-  return m.length > MAX_LEN ? m.slice(0, MAX_LEN) : m;
+  const limit = segmentLimit(m);
+  return m.length > limit ? m.slice(0, limit) : m;
 }
 
 // Map the Africa's Talking response to a delivery_status we store.
@@ -77,4 +96,7 @@ async function sendBulkSMS(recipients, message) {
   return results;
 }
 
-module.exports = { sendSMS, sendBulkSMS, SIMULATED, MAX_LEN, clamp };
+module.exports = {
+  sendSMS, sendBulkSMS, SIMULATED, MAX_LEN, MAX_LEN_UNICODE, clamp,
+  isUnicodeMessage, segmentLimit,
+};

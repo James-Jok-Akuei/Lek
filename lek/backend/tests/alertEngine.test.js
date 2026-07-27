@@ -58,6 +58,35 @@ describe('runAlerts', () => {
       { userId: 11, predictionId: 1 });
   });
 
+  test('writes each subscriber in their own language within one county', async () => {
+    const i18n = require('../src/i18n');
+    query.mockResolvedValueOnce({
+      rows: [
+        { prediction_id: 1, county_id: 1, county: 'Jonglei', predicted_change_pct: '12.5', severe_level: '10.0' },
+      ],
+    });
+    // Same state, different language preferences — including one null, which
+    // must fall back to English rather than sending nothing.
+    query.mockResolvedValueOnce({
+      rows: [
+        { id: 11, phone_number: '+211921000003', language_preference: 'en' },
+        { id: 12, phone_number: '+211921000012', language_preference: 'ar' },
+        { id: 13, phone_number: '+211921000004', language_preference: null },
+      ],
+    });
+
+    const summary = await runAlerts();
+
+    expect(summary.recipients).toBe(3);
+    expect(summary.details[0].by_language).toEqual({ en: 2, ar: 1 });
+
+    const [en, ar, fallback] = smsService.sendSMS.mock.calls;
+    expect(en[1]).toContain('Jonglei');
+    expect(ar[1]).toContain(i18n.COUNTY_NAMES_AR.Jonglei);
+    expect(ar[1]).not.toContain('Jonglei');
+    expect(fallback[1]).toBe(en[1]); // null preference == English
+  });
+
   test('sends nothing when every county is below threshold', async () => {
     query.mockResolvedValueOnce({
       rows: [

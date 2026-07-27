@@ -5,13 +5,16 @@
 // high-risk ones, and SMSes that county's active subscribers a short, calm warning.
 const { query } = require('../db/pool');
 const smsService = require('./smsService');
+const i18n = require('../i18n');
 
 const DEFAULT_HIGH_RISK_PCT = 15.0; // used when a county has no threshold row
 
-// Short (<=160 chars), simple, calm — "inform, don't frighten" (proposal NFR6/ethics).
-function composeWarning(county, pct) {
-  return `LEK ALERT: Food prices in ${county} may rise ~${Math.round(pct)}% `
-    + `in 4 weeks. Plan ahead. Reply STOP to opt out.`;
+// Short, simple, calm — "inform, don't frighten" (proposal NFR6/ethics). Written
+// in the subscriber's own language, with the state name translated too. Each
+// wording is sized for one SMS segment in its own alphabet (160 GSM-7 / 70 UCS-2).
+function composeWarning(county, pct, lang = i18n.DEFAULT_LANGUAGE) {
+  const localCounty = i18n.countyName(county, lang);
+  return i18n.t(lang).warning(localCounty, Math.round(pct));
 }
 
 // Run against the latest predictions; SMS at-risk users; return a summary.
@@ -37,17 +40,26 @@ async function runAlerts() {
 
     highRiskCounties += 1;
     const { rows: users } = await query(
-      "SELECT id, phone_number FROM users WHERE county_id = $1 AND status = 'active'",
+      `SELECT id, phone_number, language_preference FROM users
+       WHERE county_id = $1 AND status = 'active'`,
       [row.county_id]);
     recipients += users.length;
 
-    const message = composeWarning(row.county, pct);
+    // Composed per subscriber, not per county: two people in the same state can
+    // have chosen different languages.
+    const byLanguage = {};
     for (const u of users) {
-      const r = await smsService.sendSMS(u.phone_number, message,
+      const lang = i18n.normalizeLanguage(u.language_preference);
+      const r = await smsService.sendSMS(
+        u.phone_number, composeWarning(row.county, pct, lang),
         { userId: u.id, predictionId: row.prediction_id });
       if (r.status === 'sent') smsSent += 1;
+      byLanguage[lang] = (byLanguage[lang] || 0) + 1;
     }
-    details.push({ county: row.county, predicted_change_pct: pct, threshold, users: users.length });
+    details.push({
+      county: row.county, predicted_change_pct: pct, threshold,
+      users: users.length, by_language: byLanguage,
+    });
   }
 
   return {
